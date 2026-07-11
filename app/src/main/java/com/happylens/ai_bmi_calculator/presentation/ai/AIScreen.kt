@@ -1,5 +1,11 @@
 package com.happylens.ai_bmi_calculator.presentation.ai
 
+import androidx.compose.animation.core.LinearEasing
+import androidx.compose.animation.core.RepeatMode
+import androidx.compose.animation.core.animateFloat
+import androidx.compose.animation.core.infiniteRepeatable
+import androidx.compose.animation.core.rememberInfiniteTransition
+import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.isSystemInDarkTheme
@@ -7,8 +13,11 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowUpward
 import androidx.compose.material3.*
@@ -19,19 +28,39 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.happylens.ai_bmi_calculator.domain.model.ChatMessage
+import com.happylens.ai_bmi_calculator.domain.model.InsightKind
 import com.happylens.ai_bmi_calculator.presentation.components.CommonTopBar
 import com.happylens.ai_bmi_calculator.presentation.navigation.BottomNavigationBar
 import com.happylens.ai_bmi_calculator.presentation.navigation.Screen
 
 @Composable
 fun AIScreen(
-    onNavigate: (String) -> Unit
+    onNavigate: (String) -> Unit,
+    viewModel: AIViewModel = viewModel()
 ) {
     var messageText by remember { mutableStateOf("") }
-    // Simulated state for demonstration - in a real app, this would come from a ViewModel
-    val isTrackedProfile = false 
+
+    val messages by viewModel.messages.collectAsState()
+    val isTyping by viewModel.isAssistantTyping.collectAsState()
+    val insights by viewModel.insights.collectAsState()
+    val suggestionChips by viewModel.suggestionChips.collectAsState()
+
+    val listState = rememberLazyListState()
+    val itemCount = 1 + insights.size + 1 + messages.size + if (isTyping) 1 else 0
+    LaunchedEffect(itemCount) {
+        if (itemCount > 0) listState.animateScrollToItem(itemCount - 1)
+    }
+
+    fun submitMessage(text: String) {
+        if (text.isBlank() || isTyping) return
+        viewModel.sendMessage(text)
+        messageText = ""
+    }
 
     Scaffold(
         topBar = {
@@ -54,27 +83,36 @@ fun AIScreen(
             )
         },
         bottomBar = {
-            BottomNavigationBar(
-                currentRoute = Screen.AI.route,
-                onNavigate = onNavigate
-            )
+            Column {
+                AssistantInputBar(
+                    suggestionChips = suggestionChips,
+                    messageText = messageText,
+                    onMessageChange = { messageText = it },
+                    onSuggestionClick = { submitMessage(it) },
+                    onSend = { submitMessage(messageText) },
+                    enabled = !isTyping
+                )
+                BottomNavigationBar(
+                    currentRoute = Screen.AI.route,
+                    onNavigate = onNavigate
+                )
+            }
         },
         containerColor = Color.Transparent,
         modifier = Modifier.background(
             brush = Brush.verticalGradient(
                 colors = listOf(
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
+                    Color(0xFF3B82F6).copy(alpha = if (isSystemInDarkTheme()) 0.12f else 0.07f),
                     MaterialTheme.colorScheme.background,
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.02f)
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.03f)
                 )
             )
         )
     ) { paddingValues ->
         Box(
-            modifier = Modifier
-                .fillMaxSize()
+            modifier = Modifier.fillMaxSize()
         ) {
-            // Subtle decorative gradient in top right
+            // Subtle bluish decorative gradient in top right
             Box(
                 modifier = Modifier
                     .size(300.dp)
@@ -82,7 +120,23 @@ fun AIScreen(
                     .background(
                         brush = Brush.radialGradient(
                             colors = listOf(
-                                (if (isSystemInDarkTheme()) Color(0xFF10B981) else Color(0xFFD1FAE5)).copy(alpha = 0.15f),
+                                (if (isSystemInDarkTheme()) Color(0xFF3B82F6) else Color(0xFFDBEAFE)).copy(alpha = 0.2f),
+                                Color.Transparent
+                            )
+                        )
+                    )
+            )
+
+            // Subtle green decorative gradient in bottom left
+            Box(
+                modifier = Modifier
+                    .size(280.dp)
+                    .align(Alignment.BottomStart)
+                    .offset(x = (-140).dp, y = 120.dp)
+                    .background(
+                        brush = Brush.radialGradient(
+                            colors = listOf(
+                                (if (isSystemInDarkTheme()) Color(0xFF10B981) else Color(0xFFD1FAE5)).copy(alpha = 0.12f),
                                 Color.Transparent
                             )
                         )
@@ -90,6 +144,7 @@ fun AIScreen(
             )
 
             LazyColumn(
+                state = listState,
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(top = paddingValues.calculateTopPadding())
@@ -100,118 +155,47 @@ fun AIScreen(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
 
-                if (isTrackedProfile) {
-                    item {
-                        InsightCard(
-                            category = "TREND ANALYSIS",
-                            title = "Weight trending down",
-                            description = "Over the last month Foysal's weight changed by -3.8 kg (-0.8 kg this week). Current BMI is 23.6 — normal.",
-                            borderColor = Color(0xFF8B5CF6)
-                        )
-                    }
-
-                    item {
-                        InsightCard(
-                            category = "GOAL PROJECTION",
-                            title = "Gaining toward 66.0 kg",
-                            description = "At the current pace of -0.9 kg/week, Foysal should reach 66.0 kg around July 28. Keep it up!",
-                            borderColor = MaterialTheme.colorScheme.primary
-                        )
-                    }
-
-                    item {
-                        InsightCard(
-                            category = "SMART SUGGESTION",
-                            title = "For the normal range",
-                            description = "You're in the healthy range. Keep 150 minutes of moderate activity a week and a protein-forward diet to stay here.",
-                            borderColor = Color(0xFF10B981)
-                        )
-                    }
-                } else {
-                    item {
-                        InsightCard(
-                            category = "QUICK CHECK",
-                            title = "No tracking on this profile",
-                            description = "This profile is for one-off BMI checks. Switch to a tracked profile for trend analysis, projections and personalized coaching.",
-                            borderColor = Color(0xFFF97316)
-                        )
-                    }
+                items(insights, key = { it.kind.name + it.title }) { insight ->
+                    InsightCard(
+                        category = insight.category,
+                        title = insight.title,
+                        description = insight.description,
+                        borderColor = colorForInsight(insight.kind)
+                    )
                 }
 
                 item {
-                    Spacer(modifier = Modifier.height(8.dp))
                     Text(
                         text = "Ask the assistant",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    AssistantBubble(
-                        message = if (isTrackedProfile) {
-                            "Hi Foysal! I'm your AI health assistant. Your latest BMI is 23.6 (normal). Ask me anything about your trend, diet or goals."
-                        } else {
-                            "Hi Others! I'm your AI health assistant. Calculate your BMI and I can analyze it for you. Meanwhile, ask me anything about healthy weight."
-                        }
-                    )
                 }
 
-                item {
-                    LazyRow(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        items(listOf("How is my trend?", "What should I eat?", "Explain")) { suggestion ->
-                            SuggestionChip(text = suggestion)
-                        }
+                items(messages, key = { it.id }) { message ->
+                    ChatBubble(message = message)
+                }
+
+                if (isTyping) {
+                    item(key = "typing-indicator") {
+                        TypingIndicatorBubble()
                     }
                 }
 
                 item {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        TextField(
-                            value = messageText,
-                            onValueChange = { messageText = it },
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(56.dp)
-                                .clip(RoundedCornerShape(28.dp)),
-                            placeholder = { Text("Ask about your health...", color = MaterialTheme.colorScheme.onSurfaceVariant) },
-                            colors = TextFieldDefaults.colors(
-                                focusedContainerColor = MaterialTheme.colorScheme.surface,
-                                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                                disabledContainerColor = MaterialTheme.colorScheme.surface,
-                                focusedIndicatorColor = Color.Transparent,
-                                unfocusedIndicatorColor = Color.Transparent,
-                            ),
-                            singleLine = true
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        IconButton(
-                            onClick = { /* Handle send */ },
-                            modifier = Modifier
-                                .size(48.dp)
-                                .background(MaterialTheme.colorScheme.primary, CircleShape)
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.ArrowUpward,
-                                contentDescription = "Send",
-                                tint = Color.White
-                            )
-                        }
-                    }
-                }
-
-                item {
-                    Spacer(modifier = Modifier.height(paddingValues.calculateBottomPadding() + 24.dp))
+                    Spacer(modifier = Modifier.height(paddingValues.calculateBottomPadding() + 16.dp))
                 }
             }
         }
     }
+}
+
+private fun colorForInsight(kind: InsightKind): Color = when (kind) {
+    InsightKind.TREND -> Color(0xFF8B5CF6)
+    InsightKind.GOAL -> Color(0xFF3B82F6)
+    InsightKind.SUGGESTION -> Color(0xFF10B981)
+    InsightKind.QUICK_CHECK -> Color(0xFFF97316)
 }
 
 @Composable
@@ -277,27 +261,145 @@ fun InsightCard(
 }
 
 @Composable
-fun AssistantBubble(message: String) {
-    Surface(
+fun ChatBubble(message: ChatMessage) {
+    Row(
         modifier = Modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surface,
-        shape = RoundedCornerShape(24.dp),
-        shadowElevation = 2.dp
+        horizontalArrangement = if (message.isFromUser) Arrangement.End else Arrangement.Start
     ) {
-        Text(
-            text = message,
-            modifier = Modifier.padding(16.dp),
-            fontSize = 15.sp,
-            color = MaterialTheme.colorScheme.onSurface,
-            lineHeight = 22.sp
-        )
+        Surface(
+            modifier = Modifier.widthIn(max = 280.dp),
+            color = if (message.isFromUser) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(
+                topStart = 20.dp,
+                topEnd = 20.dp,
+                bottomStart = if (message.isFromUser) 20.dp else 4.dp,
+                bottomEnd = if (message.isFromUser) 4.dp else 20.dp
+            ),
+            shadowElevation = 2.dp
+        ) {
+            Text(
+                text = message.text,
+                modifier = Modifier.padding(16.dp),
+                fontSize = 15.sp,
+                color = if (message.isFromUser) Color.White else MaterialTheme.colorScheme.onSurface,
+                lineHeight = 22.sp
+            )
+        }
     }
 }
 
 @Composable
-fun SuggestionChip(text: String) {
+fun TypingIndicatorBubble() {
+    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
+        Surface(
+            color = MaterialTheme.colorScheme.surface,
+            shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomStart = 4.dp, bottomEnd = 20.dp),
+            shadowElevation = 2.dp
+        ) {
+            Row(
+                modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                val transition = rememberInfiniteTransition(label = "typing")
+                repeat(3) { index ->
+                    val alpha by transition.animateFloat(
+                        initialValue = 0.2f,
+                        targetValue = 1f,
+                        animationSpec = infiniteRepeatable(
+                            animation = tween(durationMillis = 600, delayMillis = index * 150, easing = LinearEasing),
+                            repeatMode = RepeatMode.Reverse
+                        ),
+                        label = "dot$index"
+                    )
+                    Box(
+                        modifier = Modifier
+                            .size(8.dp)
+                            .clip(CircleShape)
+                            .background(MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = alpha))
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+fun AssistantInputBar(
+    suggestionChips: List<String>,
+    messageText: String,
+    onMessageChange: (String) -> Unit,
+    onSuggestionClick: (String) -> Unit,
+    onSend: () -> Unit,
+    enabled: Boolean
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f))
+    ) {
+        if (suggestionChips.isNotEmpty()) {
+            LazyRow(
+                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                items(suggestionChips) { suggestion ->
+                    SuggestionChip(text = suggestion, onClick = { onSuggestionClick(suggestion) })
+                }
+            }
+        }
+
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 24.dp, vertical = 12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            TextField(
+                value = messageText,
+                onValueChange = onMessageChange,
+                modifier = Modifier
+                    .weight(1f)
+                    .height(56.dp)
+                    .clip(RoundedCornerShape(28.dp)),
+                placeholder = { Text("Ask about your health...", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                colors = TextFieldDefaults.colors(
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    disabledContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedIndicatorColor = Color.Transparent,
+                    unfocusedIndicatorColor = Color.Transparent,
+                ),
+                singleLine = true,
+                keyboardOptions = KeyboardOptions(imeAction = ImeAction.Send),
+                keyboardActions = KeyboardActions(onSend = { onSend() })
+            )
+            Spacer(modifier = Modifier.width(8.dp))
+            IconButton(
+                onClick = onSend,
+                enabled = enabled && messageText.isNotBlank(),
+                modifier = Modifier
+                    .size(48.dp)
+                    .background(
+                        if (enabled && messageText.isNotBlank()) MaterialTheme.colorScheme.primary
+                        else MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
+                        CircleShape
+                    )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.ArrowUpward,
+                    contentDescription = "Send",
+                    tint = Color.White
+                )
+            }
+        }
+    }
+}
+
+@Composable
+fun SuggestionChip(text: String, onClick: () -> Unit) {
     Surface(
-        onClick = { /* Handle click */ },
+        onClick = onClick,
         color = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(20.dp),
         border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),

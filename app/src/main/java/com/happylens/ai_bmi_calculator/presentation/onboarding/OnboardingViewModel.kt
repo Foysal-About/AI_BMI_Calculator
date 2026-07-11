@@ -2,6 +2,7 @@ package com.happylens.ai_bmi_calculator.presentation.onboarding
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.happylens.ai_bmi_calculator.data.repository.BmiRepository
 import com.happylens.ai_bmi_calculator.domain.model.Gender
 import com.happylens.ai_bmi_calculator.domain.model.UserProfile
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -28,14 +29,15 @@ class OnboardingViewModel : ViewModel() {
 
     fun completeOnboarding() {
         viewModelScope.launch {
-            // Here we would save the profile and set onboarding as completed in the repository
             val profile = UserProfile(
                 name = _uiState.value.name,
                 age = _uiState.value.age,
-                gender = _uiState.value.gender
+                gender = _uiState.value.gender,
+                isTracked = true
             )
-            // repository.saveUserProfile(profile)
-            // repository.setOnboardingCompleted(true)
+            BmiRepository.updateUserProfile(profile)
+            BmiRepository.updateProfileName(profile.name)
+            BmiRepository.setOnboardingCompleted(true)
         }
     }
 }

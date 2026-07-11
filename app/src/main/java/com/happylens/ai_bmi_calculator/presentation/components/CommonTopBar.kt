@@ -16,13 +16,14 @@ import androidx.compose.ui.unit.sp
 
 @Composable
 fun CommonTopBar(
+    modifier: Modifier = Modifier,
     title: String? = null,
     titleContent: @Composable (() -> Unit)? = null,
     onBackClick: (() -> Unit)? = null,
     rightContent: @Composable (RowScope.() -> Unit)? = null
 ) {
     Row(
-        modifier = Modifier
+        modifier = modifier
             .fillMaxWidth()
             .statusBarsPadding()
             .padding(horizontal = 16.dp, vertical = 4.dp),

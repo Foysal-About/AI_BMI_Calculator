@@ -49,6 +49,7 @@ fun HomeScreen(
 ) {
     val bmiRecords by viewModel.bmiRecords.collectAsState()
     val profileName by viewModel.profileName.collectAsState()
+    val allProfiles by viewModel.allProfiles.collectAsState()
     val targetWeight by viewModel.targetWeight.collectAsState()
     val startingWeight by viewModel.startingWeight.collectAsState()
     val latestRecord = bmiRecords.firstOrNull()
@@ -56,7 +57,6 @@ fun HomeScreen(
 
     var showProfileDropdown by remember { mutableStateOf(false) }
     var showTargetDialog by remember { mutableStateOf(false) }
-    val profiles = listOf("Foysal", "Family", "Alex", "Others")
 
     if (showTargetDialog) {
         TargetWeightDialog(
@@ -108,7 +108,8 @@ fun HomeScreen(
                                 .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
                                 .width(200.dp)
                         ) {
-                            profiles.forEach { name ->
+                            allProfiles.forEach { profile ->
+                                val name = profile.name
                                 DropdownMenuItem(
                                     text = { 
                                         Text(
@@ -135,7 +136,7 @@ fun HomeScreen(
                                             contentAlignment = Alignment.Center
                                         ) {
                                             Text(
-                                                text = name.take(1),
+                                                text = name.take(1).uppercase(),
                                                 color = Color.White,
                                                 fontSize = 12.sp,
                                                 fontWeight = FontWeight.Bold
@@ -159,20 +160,29 @@ fun HomeScreen(
                     }
                 },
                 rightContent = {
-                    Box(
+                    IconButton(
+                        onClick = { onNavigate(Screen.Notification.route) },
                         modifier = Modifier
-                            .size(48.dp)
-                            .clip(CircleShape)
-                            .background(MaterialTheme.colorScheme.primary)
-                            .clickable { onNavigate(Screen.Profile.route) },
-                        contentAlignment = Alignment.Center
+                            .size(44.dp)
+                            .background(MaterialTheme.colorScheme.surface, CircleShape)
                     ) {
-                        Text(
-                            text = profileName.take(1),
-                            color = Color.White,
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 20.sp
-                        )
+                        BadgedBox(
+                            badge = {
+                                Badge(
+                                    containerColor = Color(0xFFEF4444),
+                                    contentColor = Color.White,
+                                ) {
+                                    Text("4")
+                                }
+                            }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Notifications,
+                                contentDescription = "Notifications",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
                     }
                 }
             )

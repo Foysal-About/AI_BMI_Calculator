@@ -4,6 +4,7 @@ import java.util.Date
 
 data class BmiRecord(
     val id: String,
+    val profileName: String,
     val weight: Float,
     val height: Float,
     val bmi: Float,

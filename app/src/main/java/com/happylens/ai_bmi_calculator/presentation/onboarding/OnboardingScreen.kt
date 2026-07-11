@@ -43,15 +43,7 @@ fun OnboardingScreen(
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
-                        MaterialTheme.colorScheme.background,
-                        MaterialTheme.colorScheme.primary.copy(alpha = 0.02f)
-                    )
-                )
-            )
+            .background(Color(0xFF0000FF))
     ) {
         Column(
             modifier = Modifier
@@ -88,7 +80,7 @@ fun OnboardingScreen(
                 horizontalArrangement = Arrangement.Center
             ) {
                 repeat(3) { iteration ->
-                    val color = if (pagerState.currentPage == iteration) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
+                    val color = if (pagerState.currentPage == iteration) Color.White else Color.White.copy(alpha = 0.3f)
                     Box(
                         modifier = Modifier
                             .padding(4.dp)
@@ -116,13 +108,15 @@ fun OnboardingScreen(
                     .fillMaxWidth()
                     .height(56.dp),
                 shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.White,
+                    contentColor = Color(0xFF0000FF)
+                )
             ) {
                 Text(
                     text = if (pagerState.currentPage == 2) "Get Started" else "Continue",
                     fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
+                    fontWeight = FontWeight.Bold
                 )
             }
 
@@ -130,7 +124,7 @@ fun OnboardingScreen(
                 onClick = onFinish,
                 modifier = Modifier.padding(top = 8.dp)
             ) {
-                Text(text = "Skip", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(text = "Skip", color = Color.White.copy(alpha = 0.7f))
             }
         }
     }
@@ -146,8 +140,8 @@ fun WelcomePage() {
         Box(
             modifier = Modifier
                 .size(120.dp)
-                .clip(RoundedCornerShape(24.dp))
-                .background(MaterialTheme.colorScheme.surface)
+                .clip(RoundedCornerShape(32.dp))
+                .background(Color(0xFFA5B4FC))
                 .padding(16.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -155,15 +149,16 @@ fun WelcomePage() {
                 imageVector = Icons.Default.AutoAwesome,
                 contentDescription = null,
                 modifier = Modifier.size(60.dp),
-                tint = MaterialTheme.colorScheme.primary
+                tint = Color(0xFF4F46E5)
             )
             // Smaller stars like in the screenshot
             Icon(
                 imageVector = Icons.Default.AutoAwesome,
                 contentDescription = null,
                 modifier = Modifier
-                    .size(20.dp)
-                    .align(Alignment.BottomEnd),
+                    .size(24.dp)
+                    .align(Alignment.BottomEnd)
+                    .offset(x = (-8).dp, y = (-8).dp),
                 tint = Color(0xFF10B981)
             )
         }
@@ -171,12 +166,11 @@ fun WelcomePage() {
         Spacer(modifier = Modifier.height(32.dp))
 
         Text(
-            text = "AI BMI\nCalculator",
+            text = "AI BMI Calculator",
             fontSize = 32.sp,
             fontWeight = FontWeight.ExtraBold,
             textAlign = TextAlign.Center,
-            lineHeight = 38.sp,
-            color = MaterialTheme.colorScheme.onSurface
+            color = Color.White
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -185,7 +179,7 @@ fun WelcomePage() {
             text = "Know your body. Track your progress. Get intelligent health guidance.",
             fontSize = 16.sp,
             textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = Color.White.copy(alpha = 0.8f),
             modifier = Modifier.padding(horizontal = 24.dp)
         )
     }
@@ -202,7 +196,7 @@ fun FeaturesPage() {
             text = "Everything you need",
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = Color.White,
             modifier = Modifier.padding(bottom = 32.dp)
         )
 
@@ -281,7 +275,7 @@ fun ProfilePage(
             text = "Create your profile",
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
-            color = MaterialTheme.colorScheme.onSurface,
+            color = Color.White,
             modifier = Modifier.padding(bottom = 32.dp)
         )
 
@@ -390,7 +384,7 @@ fun ProfilePage(
         Text(
             text = "You can add profiles for family and friends later — each keeps its own private history.",
             fontSize = 12.sp,
-            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+            color = Color.White.copy(alpha = 0.7f),
             modifier = Modifier.padding(top = 24.dp).padding(horizontal = 8.dp),
             lineHeight = 16.sp
         )

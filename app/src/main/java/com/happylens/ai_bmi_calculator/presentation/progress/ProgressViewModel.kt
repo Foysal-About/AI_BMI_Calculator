@@ -15,6 +15,11 @@ class ProgressViewModel : ViewModel() {
         )
 
     val targetWeight: StateFlow<Float> = BmiRepository.targetWeight
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = 65.0f
+        )
 
     fun updateTargetWeight(weight: Float) {
         BmiRepository.updateTargetWeight(weight)

@@ -15,6 +15,7 @@ import com.happylens.ai_bmi_calculator.presentation.ai.AIScreen
 import com.happylens.ai_bmi_calculator.presentation.calculator.CalculatorScreen
 import com.happylens.ai_bmi_calculator.presentation.profile.ProfileScreen
 import com.happylens.ai_bmi_calculator.presentation.settings.SettingsScreen
+import com.happylens.ai_bmi_calculator.presentation.notification.NotificationScreen
 
 @Composable
 fun NavGraph(navController: NavHostController, startDestination: String) {
@@ -105,6 +106,13 @@ fun NavGraph(navController: NavHostController, startDestination: String) {
                 }
             }
             ProfileScreen(
+                onBackClick = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Home.route) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
+                    }
+                },
                 onSettingsClick = {
                     navController.navigate(Screen.Settings.route)
                 },
@@ -145,6 +153,15 @@ fun NavGraph(navController: NavHostController, startDestination: String) {
                         launchSingleTop = true
                         popUpTo(Screen.Home.route) { saveState = true }
                         restoreState = true
+                    }
+                }
+            )
+        }
+        composable(route = Screen.Notification.route) {
+            NotificationScreen(
+                onBackClick = {
+                    if (navController.currentBackStackEntry?.destination?.route == Screen.Notification.route) {
+                        navController.popBackStack()
                     }
                 }
             )

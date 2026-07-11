@@ -38,12 +38,12 @@ fun CommonTopBar(
                     onClick = onBackClick,
                     modifier = Modifier
                         .size(40.dp)
-                        .background(Color.White, CircleShape)
+                        .background(MaterialTheme.colorScheme.surface, CircleShape)
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,
                         contentDescription = "Back",
-                        tint = Color.Black
+                        tint = MaterialTheme.colorScheme.onSurface
                     )
                 }
                 Spacer(modifier = Modifier.width(16.dp))
@@ -56,7 +56,7 @@ fun CommonTopBar(
                     text = title,
                     fontSize = if (onBackClick != null) 20.sp else 28.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1F2937)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
         }

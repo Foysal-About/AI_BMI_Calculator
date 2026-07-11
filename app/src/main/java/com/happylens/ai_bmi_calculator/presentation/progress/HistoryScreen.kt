@@ -50,7 +50,7 @@ fun HistoryScreen(
                     Text(
                         text = "${bmiRecords.size} entries",
                         fontSize = 12.sp,
-                        color = Color.Gray
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             )
@@ -69,7 +69,7 @@ fun HistoryScreen(
                     brush = Brush.verticalGradient(
                         colors = listOf(
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
-                            Color.White,
+                            MaterialTheme.colorScheme.background,
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.02f)
                         )
                     )
@@ -104,13 +104,18 @@ fun HistoryScreen(
 
 @Composable
 fun HistoryItem(record: BmiRecord, weightChange: String, onDelete: () -> Unit) {
-    val statusColor = if (record.category == "Normal") Color(0xFF10B981) else Color(0xFFF59E0B)
+    val statusColor = when {
+        record.bmi < 18.5f -> MaterialTheme.colorScheme.primary
+        record.bmi < 25f -> Color(0xFF10B981)
+        record.bmi < 30f -> Color(0xFFF59E0B)
+        else -> Color(0xFFEF4444)
+    }
     val statusBgColor = statusColor.copy(alpha = 0.1f)
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Row(
             modifier = Modifier
@@ -149,7 +154,7 @@ fun HistoryItem(record: BmiRecord, weightChange: String, onDelete: () -> Unit) {
                     text = SimpleDateFormat("MMM d", Locale.ENGLISH).format(record.date),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1F2937)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = record.category,
@@ -165,12 +170,12 @@ fun HistoryItem(record: BmiRecord, weightChange: String, onDelete: () -> Unit) {
                     text = String.format(Locale.getDefault(), "%.1f kg", record.weight),
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1F2937)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = weightChange,
                     fontSize = 14.sp,
-                    color = if (weightChange.startsWith("-")) Color(0xFF10B981) else if (weightChange.startsWith("+")) Color(0xFFEF4444) else Color.Gray,
+                    color = if (weightChange.startsWith("-")) Color(0xFF10B981) else if (weightChange.startsWith("+")) Color(0xFFEF4444) else MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Medium
                 )
             }
@@ -182,12 +187,12 @@ fun HistoryItem(record: BmiRecord, weightChange: String, onDelete: () -> Unit) {
                 onClick = onDelete,
                 modifier = Modifier
                     .size(24.dp)
-                    .background(Color(0xFFFEE2E2), CircleShape)
+                    .background(MaterialTheme.colorScheme.error.copy(alpha = 0.1f), CircleShape)
             ) {
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = "Delete",
-                    tint = Color(0xFFEF4444),
+                    tint = MaterialTheme.colorScheme.error,
                     modifier = Modifier.size(14.dp)
                 )
             }

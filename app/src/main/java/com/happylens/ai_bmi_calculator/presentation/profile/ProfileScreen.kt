@@ -51,12 +51,12 @@ fun ProfileScreen(
                         onClick = onSettingsClick,
                         modifier = Modifier
                             .clip(CircleShape)
-                            .background(Color.White)
+                            .background(MaterialTheme.colorScheme.surface)
                     ) {
                         Icon(
                             imageVector = Icons.Default.Settings,
                             contentDescription = "Settings",
-                            tint = Color.Gray
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -77,7 +77,7 @@ fun ProfileScreen(
                     brush = Brush.verticalGradient(
                         colors = listOf(
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
-                            Color.White,
+                            MaterialTheme.colorScheme.background,
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.02f)
                         )
                     )
@@ -94,7 +94,7 @@ fun ProfileScreen(
                     Text(
                         text = "Each tracked profile keeps its own private history and goals. Quick-check profiles calculate without saving.",
                         fontSize = 14.sp,
-                        color = Color.Gray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         lineHeight = 20.sp
                     )
 
@@ -151,7 +151,7 @@ fun ProfileCard(
                 ) else Modifier
             ),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
@@ -178,7 +178,7 @@ fun ProfileCard(
                     text = profile.name,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1F2937)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = profile.status,
@@ -191,7 +191,7 @@ fun ProfileCard(
                 Text(
                     text = "${profile.entries} entries",
                     fontSize = 14.sp,
-                    color = Color.LightGray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                 )
             }
             Spacer(modifier = Modifier.width(12.dp))
@@ -199,13 +199,13 @@ fun ProfileCard(
                 modifier = Modifier
                     .size(24.dp)
                     .clip(CircleShape)
-                    .background(Color(0xFFFFEBEE)),
+                    .background(MaterialTheme.colorScheme.error.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Default.Close,
                     contentDescription = "Delete",
-                    tint = Color.Red,
+                    tint = MaterialTheme.colorScheme.error,
                     modifier = Modifier.size(14.dp)
                 )
             }

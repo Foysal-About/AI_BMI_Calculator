@@ -1,6 +1,9 @@
 package com.happylens.ai_bmi_calculator.presentation.navigation
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.platform.LocalContext
+import android.app.Activity
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
@@ -22,13 +25,19 @@ fun NavGraph(navController: NavHostController, startDestination: String) {
         composable(route = Screen.Onboarding.route) {
             OnboardingScreen(
                 onFinish = {
-                    navController.navigate(Screen.Home.route) {
-                        popUpTo(Screen.Onboarding.route) { inclusive = true }
+                    if (navController.currentBackStackEntry?.destination?.route == Screen.Onboarding.route) {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Onboarding.route) { inclusive = true }
+                        }
                     }
                 }
             )
         }
         composable(route = Screen.Home.route) {
+            val context = LocalContext.current
+            BackHandler {
+                (context as? Activity)?.finish()
+            }
             HomeScreen(
                 onCalculateClick = {
                     navController.navigate(Screen.Calculator.route)
@@ -43,6 +52,13 @@ fun NavGraph(navController: NavHostController, startDestination: String) {
             )
         }
         composable(route = Screen.Progress.route) {
+            BackHandler {
+                navController.navigate(Screen.Home.route) {
+                    popUpTo(Screen.Home.route) { saveState = true }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            }
             ProgressScreen(
                 onNavigate = { route ->
                     navController.navigate(route) {
@@ -54,6 +70,13 @@ fun NavGraph(navController: NavHostController, startDestination: String) {
             )
         }
         composable(route = Screen.AI.route) {
+            BackHandler {
+                navController.navigate(Screen.Home.route) {
+                    popUpTo(Screen.Home.route) { saveState = true }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            }
             AIScreen(
                 onNavigate = { route ->
                     navController.navigate(route) {
@@ -67,11 +90,20 @@ fun NavGraph(navController: NavHostController, startDestination: String) {
         composable(route = Screen.Calculator.route) {
             CalculatorScreen(
                 onBackClick = {
-                    navController.popBackStack()
+                    if (navController.currentBackStackEntry?.destination?.route == Screen.Calculator.route) {
+                        navController.popBackStack()
+                    }
                 }
             )
         }
         composable(route = Screen.Profile.route) {
+            BackHandler {
+                navController.navigate(Screen.Home.route) {
+                    popUpTo(Screen.Home.route) { saveState = true }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            }
             ProfileScreen(
                 onSettingsClick = {
                     navController.navigate(Screen.Settings.route)
@@ -88,7 +120,9 @@ fun NavGraph(navController: NavHostController, startDestination: String) {
         composable(route = Screen.Settings.route) {
             SettingsScreen(
                 onBackClick = {
-                    navController.popBackStack()
+                    if (navController.currentBackStackEntry?.destination?.route == Screen.Settings.route) {
+                        navController.popBackStack()
+                    }
                 },
                 onNavigate = { route ->
                     navController.navigate(route) {
@@ -102,7 +136,9 @@ fun NavGraph(navController: NavHostController, startDestination: String) {
         composable(route = Screen.History.route) {
             HistoryScreen(
                 onBackClick = {
-                    navController.popBackStack()
+                    if (navController.currentBackStackEntry?.destination?.route == Screen.History.route) {
+                        navController.popBackStack()
+                    }
                 },
                 onNavigate = { route ->
                     navController.navigate(route) {

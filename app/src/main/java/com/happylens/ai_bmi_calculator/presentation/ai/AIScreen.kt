@@ -2,6 +2,7 @@ package com.happylens.ai_bmi_calculator.presentation.ai
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -38,7 +39,7 @@ fun AIScreen(
                 title = "AI Insights",
                 rightContent = {
                     Surface(
-                        color = Color(0xFFEEF2FF),
+                        color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(
@@ -46,7 +47,7 @@ fun AIScreen(
                             modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF6366F1)
+                            color = MaterialTheme.colorScheme.primary
                         )
                     }
                 }
@@ -67,7 +68,7 @@ fun AIScreen(
                     brush = Brush.verticalGradient(
                         colors = listOf(
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
-                            Color.White,
+                            MaterialTheme.colorScheme.background,
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.02f)
                         )
                     )
@@ -81,7 +82,7 @@ fun AIScreen(
                     .background(
                         brush = Brush.radialGradient(
                             colors = listOf(
-                                Color(0xFFD1FAE5).copy(alpha = 0.5f),
+                                (if (isSystemInDarkTheme()) Color(0xFF10B981) else Color(0xFFD1FAE5)).copy(alpha = 0.15f),
                                 Color.Transparent
                             )
                         )
@@ -143,7 +144,7 @@ fun AIScreen(
                         text = "Ask the assistant",
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium,
-                        color = Color.Gray
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Spacer(modifier = Modifier.height(8.dp))
                     AssistantBubble(
@@ -179,11 +180,11 @@ fun AIScreen(
                                 .weight(1f)
                                 .height(56.dp)
                                 .clip(RoundedCornerShape(28.dp)),
-                            placeholder = { Text("Ask about your health...", color = Color.Gray) },
+                            placeholder = { Text("Ask about your health...", color = MaterialTheme.colorScheme.onSurfaceVariant) },
                             colors = TextFieldDefaults.colors(
-                                focusedContainerColor = Color.White,
-                                unfocusedContainerColor = Color.White,
-                                disabledContainerColor = Color.White,
+                                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                                disabledContainerColor = MaterialTheme.colorScheme.surface,
                                 focusedIndicatorColor = Color.Transparent,
                                 unfocusedIndicatorColor = Color.Transparent,
                             ),
@@ -194,7 +195,7 @@ fun AIScreen(
                             onClick = { /* Handle send */ },
                             modifier = Modifier
                                 .size(48.dp)
-                                .background(Color(0xFF8B5CF6), CircleShape)
+                                .background(MaterialTheme.colorScheme.primary, CircleShape)
                         ) {
                             Icon(
                                 imageVector = Icons.Default.ArrowUpward,
@@ -225,10 +226,10 @@ fun InsightCard(
             .fillMaxWidth()
             .border(
                 width = 1.dp,
-                color = Color.White,
+                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f),
                 shape = RoundedCornerShape(24.dp)
             ),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(24.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
@@ -261,13 +262,13 @@ fun InsightCard(
                     text = title,
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1F2937)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = description,
                     fontSize = 14.sp,
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     lineHeight = 20.sp
                 )
             }
@@ -279,7 +280,7 @@ fun InsightCard(
 fun AssistantBubble(message: String) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = Color.White,
+        color = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(24.dp),
         shadowElevation = 2.dp
     ) {
@@ -287,7 +288,7 @@ fun AssistantBubble(message: String) {
             text = message,
             modifier = Modifier.padding(16.dp),
             fontSize = 15.sp,
-            color = Color(0xFF1F2937),
+            color = MaterialTheme.colorScheme.onSurface,
             lineHeight = 22.sp
         )
     }
@@ -297,9 +298,9 @@ fun AssistantBubble(message: String) {
 fun SuggestionChip(text: String) {
     Surface(
         onClick = { /* Handle click */ },
-        color = Color.White,
+        color = MaterialTheme.colorScheme.surface,
         shape = RoundedCornerShape(20.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color(0xFFEEF2FF)),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
         shadowElevation = 1.dp
     ) {
         Text(
@@ -307,7 +308,7 @@ fun SuggestionChip(text: String) {
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             fontSize = 14.sp,
             fontWeight = FontWeight.Medium,
-            color = Color(0xFF6366F1)
+            color = MaterialTheme.colorScheme.primary
         )
     }
 }

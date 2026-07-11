@@ -1,7 +1,7 @@
 package com.happylens.ai_bmi_calculator.presentation.calculator
 
 import androidx.compose.foundation.*
-import androidx.compose.foundation.gestures.detectDragGestures
+import androidx.compose.foundation.gestures.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -15,12 +15,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.SolidColor
-import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.Stroke
-import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
 import androidx.compose.ui.text.font.FontWeight
@@ -33,6 +32,19 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.happylens.ai_bmi_calculator.domain.model.Gender
 import com.happylens.ai_bmi_calculator.presentation.components.CommonTopBar
 import java.util.Locale
+import kotlin.math.floor
+
+private fun formatFeetInches(totalInches: Float): String {
+    var feet = floor(totalInches / 12f).toInt()
+    var inches = totalInches - feet * 12f
+    // Guard against "12.0\"" showing up after rounding to 1 decimal place
+    if (inches >= 11.95f) {
+        inches = 0f
+        feet += 1
+    }
+    val inchesStr = String.format(Locale.getDefault(), "%.1f", inches).replace(',', '.')
+    return "$feet' $inchesStr\""
+}
 
 @Composable
 fun CalculatorScreen(
@@ -81,7 +93,7 @@ fun CalculatorScreen(
                     brush = Brush.verticalGradient(
                         colors = listOf(
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
-                            Color.White,
+                            MaterialTheme.colorScheme.background,
                             MaterialTheme.colorScheme.primary.copy(alpha = 0.02f)
                         )
                     )
@@ -108,13 +120,13 @@ fun CalculatorScreen(
                         .weight(1.2f)
                         .fillMaxHeight(),
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
                     Box(
                         modifier = Modifier
                             .padding(8.dp)
                             .fillMaxSize()
-                            .background(Color(0xFFF3F4F6), RoundedCornerShape(10.dp))
+                            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(10.dp))
                             .padding(4.dp)
                     ) {
                         Row(modifier = Modifier.fillMaxSize()) {
@@ -142,7 +154,7 @@ fun CalculatorScreen(
                         .weight(1f)
                         .fillMaxHeight(),
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White)
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
                 ) {
                     Row(
                         modifier = Modifier
@@ -173,13 +185,13 @@ fun CalculatorScreen(
                                 text = age.toString(),
                                 fontWeight = FontWeight.Bold,
                                 fontSize = 20.sp,
-                                color = Color(0xFF1F2937)
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
                                 text = "AGE",
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold,
-                                color = Color.LightGray
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                         IconButton(
@@ -221,11 +233,15 @@ fun CalculatorScreen(
                 content = {
                     Ruler(
                         value = height,
-                        range = if (heightUnit == "cm") 100f..250f else 40f..100f,
+                        range = if (heightUnit == "cm") 100f..250f else 36f..108f,
                         onValueChange = { height = it },
                         modifier = Modifier
                             .fillMaxWidth()
-                            .height(80.dp)
+                            .height(80.dp),
+                        majorStep = if (heightUnit == "cm") 10 else 12,
+                        labelFormatter = { tick ->
+                            if (heightUnit == "cm") tick.toString() else "${tick / 12}'"
+                        }
                     )
                 }
             )
@@ -277,7 +293,7 @@ fun CalculatorScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 Column(
                     modifier = Modifier.padding(24.dp),
@@ -298,7 +314,7 @@ fun CalculatorScreen(
                         text = "BODY MASS INDEX",
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
-                        color = Color.LightGray
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     
                     Spacer(modifier = Modifier.height(16.dp))
@@ -320,7 +336,7 @@ fun CalculatorScreen(
                     Text(
                         text = if (bmi in 18.5f..24.9f) "Within the healthy range ✓" else "Outside the healthy range",
                         fontSize = 14.sp,
-                        color = Color.Gray
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -331,7 +347,7 @@ fun CalculatorScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
@@ -344,11 +360,12 @@ fun CalculatorScreen(
                     val maxIdeal = if (weightUnit == "kg") maxIdealKg else maxIdealKg * 2.20462f
                     
                     Column {
-                        Text(text = "Ideal weight range", fontSize = 12.sp, color = Color.Gray)
+                        Text(text = "Ideal weight range", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text(
                             text = String.format(Locale.getDefault(), "%.1f %s – %.1f %s", minIdeal, weightUnit, maxIdeal, weightUnit),
                             fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
                     val isRange = bmi in 18.5f..24.9f
@@ -367,10 +384,10 @@ fun CalculatorScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 Column(modifier = Modifier.padding(24.dp)) {
-                    Text(text = "BMI Categories", fontWeight = FontWeight.Bold, fontSize = 16.sp)
+                    Text(text = "BMI Categories", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                     Spacer(modifier = Modifier.height(16.dp))
                     BMICategoryItem("Very severely underweight", "≤ 15.9", MaterialTheme.colorScheme.primary, bmi <= 15.9f)
                     BMICategoryItem("Severely underweight", "16.0 – 16.9", MaterialTheme.colorScheme.primary, bmi in 16.0f..16.9f)
@@ -389,13 +406,13 @@ fun CalculatorScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFEEF2FF))
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
             ) {
                 Row(modifier = Modifier.padding(16.dp)) {
-                    Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = Color(0xFF8B5CF6), modifier = Modifier.size(20.dp))
+                    Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
-                        Text(text = "AI Recommendation", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = Color(0xFF8B5CF6))
+                        Text(text = "AI Recommendation", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                         Text(
                             text = when {
                                 bmi < 18.5f -> "Consider increasing your calorie intake with nutrient-dense foods. Consult with a nutritionist for a personalized plan."
@@ -404,7 +421,7 @@ fun CalculatorScreen(
                                 else -> "It's recommended to consult with a healthcare provider to develop a safe and effective weight management plan."
                             },
                             fontSize = 13.sp,
-                            color = Color.Gray,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             lineHeight = 18.sp
                         )
                     }
@@ -446,13 +463,13 @@ fun GenderButton(text: String, isSelected: Boolean, onClick: () -> Unit, modifie
         modifier = modifier
             .height(40.dp)
             .clip(RoundedCornerShape(8.dp))
-            .background(if (isSelected) Color.White else Color.Transparent)
+            .background(if (isSelected) MaterialTheme.colorScheme.surface else Color.Transparent)
             .clickable { onClick() },
         contentAlignment = Alignment.Center
     ) {
         Text(
             text = text,
-            color = if (isSelected) Color(0xFF1F2937) else Color.Gray,
+            color = if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
             fontSize = 14.sp
         )
@@ -476,38 +493,22 @@ fun MeasurementCard(
     // We update on value changes only if not focused, but we ALWAYS update on unit changes.
     LaunchedEffect(value, currentUnit) {
         val formatted = if (currentUnit == "ft/in") {
-            val totalInches = value.toInt()
-            val feet = totalInches / 12
-            val inches = totalInches % 12
-            "$feet' $inches\""
+            formatFeetInches(value)
         } else {
             if (label == "Height") String.format(Locale.getDefault(), "%.0f", value)
             else String.format(Locale.getDefault(), "%.1f", value).replace(',', '.')
         }
-        
+
         // If unit changed or we are not focused, update the text
         if (!isFocused || textValue.isEmpty()) {
             textValue = formatted
-        }
-    }
-    
-    // Force update when unit changes specifically
-    LaunchedEffect(currentUnit) {
-        textValue = if (currentUnit == "ft/in") {
-            val totalInches = value.toInt()
-            val feet = totalInches / 12
-            val inches = totalInches % 12
-            "$feet' $inches\""
-        } else {
-            if (label == "Height") String.format(Locale.getDefault(), "%.0f", value)
-            else String.format(Locale.getDefault(), "%.1f", value).replace(',', '.')
         }
     }
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Box(modifier = Modifier.fillMaxWidth()) {
@@ -516,7 +517,7 @@ fun MeasurementCard(
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp,
                     modifier = Modifier.align(Alignment.CenterStart),
-                    color = Color(0xFF1F2937)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Row(
@@ -530,14 +531,18 @@ fun MeasurementCard(
                     BasicTextField(
                         value = textValue,
                         onValueChange = { newValue ->
-                            textValue = newValue
+                            // Filter input to allow only numbers and relevant symbols
+                            val filtered = newValue.filter { it.isDigit() || it == '.' || it == ',' || it == '\'' || it == '\"' || it == ' ' }
+                            textValue = filtered
+                            
                             if (currentUnit == "ft/in") {
-                                val regex = Regex("""(\d+)'?\s*(\d+)?""")
-                                val match = regex.find(newValue)
+                                // Allow dot, quote or space as separators for feet and inches
+                                val regex = Regex("""(\d+)[.'"\s]*(\d+(?:[.,]\d+)?)?""")
+                                val match = regex.find(filtered)
                                 if (match != null) {
                                     val val1 = match.groupValues[1].toFloatOrNull() ?: 0f
-                                    val val2 = match.groupValues[2].toFloatOrNull() ?: 0f
-                                    if (newValue.contains("'") || newValue.contains("\"")) {
+                                    val val2 = match.groupValues[2].replace(',', '.').toFloatOrNull() ?: 0f
+                                    if (filtered.contains("'") || filtered.contains("\"") || filtered.contains(".") || filtered.contains(" ")) {
                                         onValueChange(val1 * 12 + val2)
                                     } else if (val1 > 10) {
                                         onValueChange(val1) // Assume total inches if it's a large number
@@ -546,7 +551,7 @@ fun MeasurementCard(
                                     }
                                 }
                             } else {
-                                newValue.replace(',', '.').toFloatOrNull()?.let {
+                                filtered.replace(',', '.').toFloatOrNull()?.let {
                                     onValueChange(it)
                                 }
                             }
@@ -558,11 +563,11 @@ fun MeasurementCard(
                             textAlign = TextAlign.Center
                         ),
                         modifier = Modifier
-                            .widthIn(min = 60.dp)
+                            .widthIn(min = 90.dp)
                             .width(IntrinsicSize.Min)
                             .onFocusChanged { isFocused = it.isFocused },
                         keyboardOptions = KeyboardOptions(
-                            keyboardType = if (currentUnit == "ft/in") KeyboardType.Text else KeyboardType.Decimal
+                            keyboardType = KeyboardType.Decimal
                         ),
                         singleLine = true,
                         cursorBrush = SolidColor(MaterialTheme.colorScheme.primary)
@@ -572,7 +577,7 @@ fun MeasurementCard(
                         Text(
                             text = " $currentUnit",
                             fontSize = 14.sp,
-                            color = Color.Gray,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Bold,
                             modifier = Modifier.padding(top = 4.dp)
                         )
@@ -582,14 +587,14 @@ fun MeasurementCard(
                 Row(
                     modifier = Modifier
                         .align(Alignment.CenterEnd)
-                        .background(Color(0xFFF3F4F6), RoundedCornerShape(8.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
                         .padding(2.dp)
                 ) {
                     unitOptions.forEach { unit ->
                         Box(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(6.dp))
-                                .background(if (currentUnit == unit) Color.White else Color.Transparent)
+                                .background(if (currentUnit == unit) MaterialTheme.colorScheme.surface else Color.Transparent)
                                 .clickable { 
                                     onUnitChange(unit)
                                 }
@@ -599,7 +604,7 @@ fun MeasurementCard(
                                 text = unit,
                                 fontSize = 11.sp,
                                 fontWeight = if (currentUnit == unit) FontWeight.Bold else FontWeight.Normal,
-                                color = if (currentUnit == unit) Color.Black else Color.Gray
+                                color = if (currentUnit == unit) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -616,66 +621,116 @@ fun Ruler(
     value: Float,
     range: ClosedFloatingPointRange<Float>,
     onValueChange: (Float) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    majorStep: Int = 10,
+    labelFormatter: (Int) -> String = { it.toString() }
 ) {
     val textMeasurer = rememberTextMeasurer()
     val primaryColor = MaterialTheme.colorScheme.primary
-    Canvas(modifier = modifier.pointerInput(Unit) {
-        detectDragGestures { change, dragAmount ->
-            change.consume()
-            val newValue = (value - dragAmount.x / 10f).coerceIn(range)
-            onValueChange(newValue)
-        }
-    }) {
-        val width = size.width
-        val height = size.height
-        val centerX = width / 2
-        val spacing = 10.dp.toPx()
+    val density = LocalDensity.current
+    val spacingPx = with(density) { 10.dp.toPx() }
 
-        val startValue = (value - (centerX / spacing)).toInt().coerceAtLeast(range.start.toInt())
-        val endValue = (value + (centerX / spacing)).toInt().coerceAtMost(range.endInclusive.toInt())
+    // Use a derived state for range to ensure smooth updates
+    val currentRange by rememberUpdatedState(range)
+    val currentOnValueChange by rememberUpdatedState(onValueChange)
 
-        for (tickValue in startValue..endValue) {
-            val x = centerX + (tickValue - value) * spacing
-            val isMajor = tickValue % 10 == 0
-            val tickHeight = if (isMajor) 30.dp.toPx() else 15.dp.toPx()
+    val scrollableState = rememberScrollableState { delta ->
+        val newValue = (value - delta / spacingPx).coerceIn(currentRange)
+        val consumed = (value - newValue) * spacingPx
+        currentOnValueChange(newValue)
+        consumed
+    }
 
-            drawLine(
-                color = if (isMajor) Color.Gray else Color.LightGray.copy(alpha = 0.5f),
-                start = androidx.compose.ui.geometry.Offset(x, height * 0.4f - tickHeight / 2),
-                end = androidx.compose.ui.geometry.Offset(x, height * 0.4f + tickHeight / 2),
-                strokeWidth = if (isMajor) 2.dp.toPx() else 1.dp.toPx()
-            )
+    val labelStyle = TextStyle(
+        fontSize = 12.sp, 
+        color = MaterialTheme.colorScheme.onSurfaceVariant, 
+        fontWeight = FontWeight.Medium,
+        textAlign = TextAlign.Center
+    )
+    
+    val onSurface = MaterialTheme.colorScheme.onSurface
+    val tickColorMajor = onSurface.copy(alpha = 0.6f)
+    val tickColorMinor = onSurface.copy(alpha = 0.2f)
 
-            if (isMajor) {
-                val textLayoutResult = textMeasurer.measure(
-                    text = tickValue.toString(),
-                    style = TextStyle(fontSize = 12.sp, color = Color.Gray)
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .scrollable(scrollableState, Orientation.Horizontal)
+    ) {
+        Canvas(modifier = Modifier.fillMaxSize()) {
+            val width = size.width
+            val height = size.height
+            val centerX = width / 2
+            
+            val halfWidthUnits = centerX / spacingPx
+            // Use floor for more stable tick generation during scroll
+            val startValue = kotlin.math.floor(value - halfWidthUnits).toInt().coerceAtLeast(currentRange.start.toInt() - 1)
+            val endValue = kotlin.math.ceil(value + halfWidthUnits).toInt().coerceAtMost(currentRange.endInclusive.toInt() + 1)
+
+            for (tickValue in startValue..endValue) {
+                val x = centerX + (tickValue - value) * spacingPx
+                
+                if (x < -60 || x > width + 60) continue
+                
+                val isMajor = tickValue % majorStep == 0
+                val tickHeight = if (isMajor) 32.dp.toPx() else 16.dp.toPx()
+                val tickColor = if (isMajor) tickColorMajor else tickColorMinor
+                val strokeWidth = if (isMajor) 2.dp.toPx() else 1.dp.toPx()
+
+                drawLine(
+                    color = tickColor,
+                    start = Offset(x, (height - tickHeight) / 2),
+                    end = Offset(x, (height + tickHeight) / 2),
+                    strokeWidth = strokeWidth,
+                    cap = StrokeCap.Round
                 )
-                drawText(
-                    textLayoutResult = textLayoutResult,
-                    topLeft = androidx.compose.ui.geometry.Offset(
-                        x - textLayoutResult.size.width / 2,
-                        height * 0.4f + tickHeight / 2 + 4.dp.toPx()
+
+                if (isMajor) {
+                    val label = labelFormatter(tickValue)
+                    // Optimization: Only measure if needed, or use a fixed size to avoid jumping
+                    drawText(
+                        textMeasurer = textMeasurer,
+                        text = label,
+                        style = labelStyle,
+                        topLeft = Offset(
+                            x - 25.dp.toPx(),
+                            (height + tickHeight) / 2 + 4.dp.toPx()
+                        ),
+                        size = Size(50.dp.toPx(), 20.dp.toPx())
                     )
-                )
+                }
             }
-        }
 
-        // Center indicator
-        drawLine(
-            color = primaryColor,
-            start = androidx.compose.ui.geometry.Offset(centerX, height * 0.4f - 25.dp.toPx()),
-            end = androidx.compose.ui.geometry.Offset(centerX, height * 0.4f + 25.dp.toPx()),
-            strokeWidth = 3.dp.toPx(),
-            cap = StrokeCap.Round
-        )
+            // Central indicator (needle) - Drawn last to be on top
+            drawLine(
+                color = primaryColor,
+                start = Offset(centerX, (height - 48.dp.toPx()) / 2),
+                end = Offset(centerX, (height + 48.dp.toPx()) / 2),
+                strokeWidth = 3.dp.toPx(),
+                cap = StrokeCap.Round
+            )
+            
+            // Pointer at top - Draw with fixed geometry to avoid allocations in draw loop
+            val pointerSize = 12.dp.toPx()
+            val pointerPath = Path().apply {
+                moveTo(centerX, (height - 48.dp.toPx()) / 2)
+                lineTo(centerX - pointerSize / 2, (height - 48.dp.toPx()) / 2 - 8.dp.toPx())
+                lineTo(centerX + pointerSize / 2, (height - 48.dp.toPx()) / 2 - 8.dp.toPx())
+                close()
+            }
+            drawPath(pointerPath, primaryColor)
+        }
     }
 }
 
 @Composable
 fun BMIGauge(bmi: Float, modifier: Modifier = Modifier) {
     val primaryColor = MaterialTheme.colorScheme.primary
+    val successColor = Color(0xFF10B981)
+    val warningColor = Color(0xFFF59E0B)
+    val errorColor = Color(0xFFEF4444)
+    val surfaceColor = MaterialTheme.colorScheme.surface
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -711,7 +766,7 @@ fun BMIGauge(bmi: Float, modifier: Modifier = Modifier) {
             
             // Normal: 215-305 (90°)
             drawArc(
-                color = Color(0xFF10B981),
+                color = successColor,
                 startAngle = startAngle + 35f,
                 sweepAngle = 90f,
                 useCenter = false,
@@ -722,7 +777,7 @@ fun BMIGauge(bmi: Float, modifier: Modifier = Modifier) {
             
             // Overweight: 305-345 (40°)
             drawArc(
-                color = Color(0xFFF59E0B),
+                color = warningColor,
                 startAngle = startAngle + 125f,
                 sweepAngle = 40f,
                 useCenter = false,
@@ -733,7 +788,7 @@ fun BMIGauge(bmi: Float, modifier: Modifier = Modifier) {
             
             // Obese: 345-360 (15°)
             drawArc(
-                color = Color(0xFFEF4444),
+                color = errorColor,
                 startAngle = startAngle + 165f,
                 sweepAngle = 15f,
                 useCenter = false,
@@ -754,15 +809,15 @@ fun BMIGauge(bmi: Float, modifier: Modifier = Modifier) {
             val pointerX = arcCenter.x + radius * Math.cos(radian).toFloat()
             val pointerY = arcCenter.y + radius * Math.sin(radian).toFloat()
             
-            // White outer circle for pointer
+            // Surface-colored outer circle for pointer
             drawCircle(
-                color = Color.White,
+                color = surfaceColor,
                 radius = 9.dp.toPx(),
                 center = androidx.compose.ui.geometry.Offset(pointerX, pointerY)
             )
             // Colored inner circle for pointer
             drawCircle(
-                color = if (bmi < 18.5) primaryColor else if (bmi < 25) Color(0xFF10B981) else if (bmi < 30) Color(0xFFF59E0B) else Color(0xFFEF4444),
+                color = if (bmi < 18.5) primaryColor else if (bmi < 25) successColor else if (bmi < 30) warningColor else errorColor,
                 radius = 6.dp.toPx(),
                 center = androidx.compose.ui.geometry.Offset(pointerX, pointerY),
                 style = Stroke(width = 3.dp.toPx())
@@ -774,7 +829,7 @@ fun BMIGauge(bmi: Float, modifier: Modifier = Modifier) {
 @Composable
 fun BMICategoryItem(label: String, range: String, color: Color, isSelected: Boolean) {
     Surface(
-        color = if (isSelected) Color(0xFFE8F5E9) else Color.Transparent,
+        color = if (isSelected) color.copy(alpha = 0.15f) else Color.Transparent,
         shape = RoundedCornerShape(12.dp),
         modifier = Modifier.fillMaxWidth()
     ) {
@@ -788,13 +843,13 @@ fun BMICategoryItem(label: String, range: String, color: Color, isSelected: Bool
                 text = label,
                 modifier = Modifier.weight(1f),
                 fontSize = 13.sp,
-                color = if (isSelected) Color(0xFF10B981) else Color.Gray,
+                color = if (isSelected) color else MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
             )
             Text(
                 text = range,
                 fontSize = 13.sp,
-                color = if (isSelected) Color(0xFF10B981) else Color.Gray,
+                color = if (isSelected) color else MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
             )
         }

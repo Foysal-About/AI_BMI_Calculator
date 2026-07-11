@@ -47,7 +47,7 @@ fun OnboardingScreen(
                 brush = Brush.verticalGradient(
                     colors = listOf(
                         MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
-                        Color.White,
+                        MaterialTheme.colorScheme.background,
                         MaterialTheme.colorScheme.primary.copy(alpha = 0.02f)
                     )
                 )
@@ -56,7 +56,9 @@ fun OnboardingScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(24.dp),
+                .padding(horizontal = 24.dp)
+                .padding(top = 24.dp, bottom = 40.dp)
+                .navigationBarsPadding(),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             HorizontalPager(
@@ -86,7 +88,7 @@ fun OnboardingScreen(
                 horizontalArrangement = Arrangement.Center
             ) {
                 repeat(3) { iteration ->
-                    val color = if (pagerState.currentPage == iteration) MaterialTheme.colorScheme.primary else Color(0xFFD1D5DB)
+                    val color = if (pagerState.currentPage == iteration) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
                     Box(
                         modifier = Modifier
                             .padding(4.dp)
@@ -128,7 +130,7 @@ fun OnboardingScreen(
                 onClick = onFinish,
                 modifier = Modifier.padding(top = 8.dp)
             ) {
-                Text(text = "Skip", color = Color.Gray)
+                Text(text = "Skip", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
@@ -145,7 +147,7 @@ fun WelcomePage() {
             modifier = Modifier
                 .size(120.dp)
                 .clip(RoundedCornerShape(24.dp))
-                .background(Color.White)
+                .background(MaterialTheme.colorScheme.surface)
                 .padding(16.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -174,7 +176,7 @@ fun WelcomePage() {
             fontWeight = FontWeight.ExtraBold,
             textAlign = TextAlign.Center,
             lineHeight = 38.sp,
-            color = Color(0xFF1F2937)
+            color = MaterialTheme.colorScheme.onSurface
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -183,7 +185,7 @@ fun WelcomePage() {
             text = "Know your body. Track your progress. Get intelligent health guidance.",
             fontSize = 16.sp,
             textAlign = TextAlign.Center,
-            color = Color.Gray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.padding(horizontal = 24.dp)
         )
     }
@@ -200,7 +202,7 @@ fun FeaturesPage() {
             text = "Everything you need",
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF1F2937),
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(bottom = 32.dp)
         )
 
@@ -236,7 +238,7 @@ fun FeatureItem(icon: ImageVector, iconColor: Color, title: String, description:
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.9f)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Row(
@@ -254,8 +256,8 @@ fun FeatureItem(icon: ImageVector, iconColor: Color, title: String, description:
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column {
-                Text(text = title, fontWeight = FontWeight.Bold, fontSize = 16.sp)
-                Text(text = description, fontSize = 14.sp, color = Color.Gray)
+                Text(text = title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
+                Text(text = description, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }
@@ -279,14 +281,14 @@ fun ProfilePage(
             text = "Create your profile",
             fontSize = 28.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF1F2937),
+            color = MaterialTheme.colorScheme.onSurface,
             modifier = Modifier.padding(bottom = 32.dp)
         )
 
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White.copy(alpha = 0.9f)),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
         ) {
             Column(modifier = Modifier.padding(24.dp)) {
@@ -294,7 +296,7 @@ fun ProfilePage(
                     text = "YOUR NAME",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color.LightGray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                 )
                 OutlinedTextField(
                     value = name,
@@ -305,8 +307,10 @@ fun ProfilePage(
                         .padding(top = 8.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedBorderColor = Color(0xFFE5E7EB),
-                        focusedBorderColor = MaterialTheme.colorScheme.primary
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
+                        focusedTextColor = MaterialTheme.colorScheme.onSurface
                     )
                 )
 
@@ -318,7 +322,7 @@ fun ProfilePage(
                             text = "AGE",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.LightGray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                         )
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
@@ -328,7 +332,7 @@ fun ProfilePage(
                                 onClick = { if (age > 1) onAgeChange(age - 1) },
                                 modifier = Modifier
                                     .size(36.dp)
-                                    .background(Color(0xFFF3F4F6), CircleShape)
+                                    .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
                             ) {
                                 Icon(Icons.Default.Remove, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                             }
@@ -336,13 +340,14 @@ fun ProfilePage(
                                 text = age.toString(),
                                 fontSize = 20.sp,
                                 fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 16.dp)
+                                modifier = Modifier.padding(horizontal = 16.dp),
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             IconButton(
                                 onClick = { onAgeChange(age + 1) },
                                 modifier = Modifier
                                     .size(36.dp)
-                                    .background(Color(0xFFF3F4F6), CircleShape)
+                                    .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
                             ) {
                                 Icon(Icons.Default.Add, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
                             }
@@ -354,14 +359,14 @@ fun ProfilePage(
                             text = "GENDER",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.LightGray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                         )
                         Row(
                             modifier = Modifier
                                 .padding(top = 8.dp)
                                 .fillMaxWidth()
                                 .height(40.dp)
-                                .background(Color(0xFFF3F4F6), RoundedCornerShape(10.dp))
+                                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(10.dp))
                                 .padding(4.dp)
                         ) {
                             GenderButton(
@@ -385,7 +390,7 @@ fun ProfilePage(
         Text(
             text = "You can add profiles for family and friends later — each keeps its own private history.",
             fontSize = 12.sp,
-            color = Color.LightGray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
             modifier = Modifier.padding(top = 24.dp).padding(horizontal = 8.dp),
             lineHeight = 16.sp
         )
@@ -404,7 +409,7 @@ fun GenderButton(text: String, isSelected: Boolean, onClick: () -> Unit, modifie
     ) {
         Text(
             text = text,
-            color = if (isSelected) Color.White else Color.Gray,
+            color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
             fontSize = 14.sp
         )

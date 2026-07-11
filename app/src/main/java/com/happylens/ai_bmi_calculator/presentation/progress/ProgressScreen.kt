@@ -71,28 +71,24 @@ fun ProgressScreen(
                 onNavigate = onNavigate
             )
         },
-        containerColor = Color.Transparent
+        containerColor = Color.Transparent,
+        modifier = Modifier.background(
+            brush = Brush.verticalGradient(
+                colors = listOf(
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
+                    MaterialTheme.colorScheme.background,
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.02f)
+                )
+            )
+        )
     ) { paddingValues ->
-        Box(
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
-                            MaterialTheme.colorScheme.background,
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.02f)
-                        )
-                    )
-                )
+                .padding(top = paddingValues.calculateTopPadding())
+                .verticalScroll(rememberScrollState())
+                .padding(horizontal = 24.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(top = paddingValues.calculateTopPadding())
-                    .verticalScroll(rememberScrollState())
-                    .padding(horizontal = 24.dp)
-            ) {
                 Spacer(modifier = Modifier.height(8.dp))
 
                 WeightGoalCard(
@@ -126,7 +122,6 @@ fun ProgressScreen(
 
                 Spacer(modifier = Modifier.height(paddingValues.calculateBottomPadding() + 24.dp))
             }
-        }
     }
 }
 

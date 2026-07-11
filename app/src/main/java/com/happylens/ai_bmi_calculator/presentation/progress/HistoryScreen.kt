@@ -60,28 +60,25 @@ fun HistoryScreen(
                 currentRoute = Screen.Progress.route,
                 onNavigate = onNavigate
             )
-        }
+        },
+        containerColor = Color.Transparent,
+        modifier = Modifier.background(
+            brush = Brush.verticalGradient(
+                colors = listOf(
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
+                    MaterialTheme.colorScheme.background,
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.02f)
+                )
+            )
+        )
     ) { paddingValues ->
-        Box(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
-                            MaterialTheme.colorScheme.background,
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.02f)
-                        )
-                    )
-                )
+                .padding(paddingValues),
+            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            LazyColumn(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(paddingValues),
-                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
                 items(bmiRecords.indices.toList()) { index ->
                     val record = bmiRecords[index]
                     val weightChange = if (index < bmiRecords.size - 1) {
@@ -98,7 +95,6 @@ fun HistoryScreen(
                     )
                 }
             }
-        }
     }
 }
 

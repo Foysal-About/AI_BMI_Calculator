@@ -33,4 +33,8 @@ class HomeViewModel : ViewModel() {
     fun selectProfile(name: String) {
         BmiRepository.updateProfileName(name)
     }
+
+    fun updateTargetWeight(weight: Float) {
+        BmiRepository.updateTargetWeight(weight)
+    }
 }

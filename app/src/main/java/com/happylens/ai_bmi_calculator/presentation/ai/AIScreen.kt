@@ -59,20 +59,20 @@ fun AIScreen(
                 onNavigate = onNavigate
             )
         },
-        containerColor = Color.Transparent
+        containerColor = Color.Transparent,
+        modifier = Modifier.background(
+            brush = Brush.verticalGradient(
+                colors = listOf(
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
+                    MaterialTheme.colorScheme.background,
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.02f)
+                )
+            )
+        )
     ) { paddingValues ->
         Box(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
-                            MaterialTheme.colorScheme.background,
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.02f)
-                        )
-                    )
-                )
         ) {
             // Subtle decorative gradient in top right
             Box(

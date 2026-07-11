@@ -1,5 +1,7 @@
 package com.happylens.ai_bmi_calculator.presentation.navigation
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -16,11 +18,15 @@ fun BottomNavigationBar(
     currentRoute: String?,
     onNavigate: (String) -> Unit
 ) {
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        color = MaterialTheme.colorScheme.surface,
-        shadowElevation = 8.dp,
-        tonalElevation = 0.dp
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f))
+            .border(
+                width = 0.5.dp,
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
+                shape = androidx.compose.ui.graphics.RectangleShape
+            )
     ) {
         NavigationBar(
             modifier = Modifier.navigationBarsPadding(),
@@ -29,7 +35,6 @@ fun BottomNavigationBar(
         ) {
             val items = listOf(
                 NavigationItem("Home", Screen.Home.route, Icons.Filled.Home, Icons.Outlined.Home),
-                NavigationItem("Progress", Screen.Progress.route, Icons.Filled.BarChart, Icons.Outlined.BarChart),
                 NavigationItem("AI", Screen.AI.route, Icons.Filled.AutoAwesome, Icons.Outlined.AutoAwesome),
                 NavigationItem("Profile", Screen.Profile.route, Icons.Filled.Person, Icons.Outlined.Person)
             )

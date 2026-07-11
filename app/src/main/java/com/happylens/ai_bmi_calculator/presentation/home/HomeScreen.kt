@@ -1,12 +1,12 @@
 package com.happylens.ai_bmi_calculator.presentation.home
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -16,6 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -53,7 +55,19 @@ fun HomeScreen(
     val greeting = remember { greetingForCurrentTime() }
 
     var showProfileDropdown by remember { mutableStateOf(false) }
+    var showTargetDialog by remember { mutableStateOf(false) }
     val profiles = listOf("Foysal", "Family", "Alex", "Others")
+
+    if (showTargetDialog) {
+        TargetWeightDialog(
+            initialWeight = targetWeight,
+            onDismiss = { showTargetDialog = false },
+            onConfirm = {
+                viewModel.updateTargetWeight(it)
+                showTargetDialog = false
+            }
+        )
+    }
 
     Scaffold(
         topBar = {
@@ -169,190 +183,212 @@ fun HomeScreen(
                 onNavigate = onNavigate
             )
         },
-        containerColor = Color.Transparent
+        containerColor = Color.Transparent,
+        modifier = Modifier.background(
+            brush = Brush.verticalGradient(
+                colors = listOf(
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
+                    MaterialTheme.colorScheme.background,
+                    MaterialTheme.colorScheme.primary.copy(alpha = 0.02f)
+                )
+            )
+        )
     ) { padding ->
-        Box(
+        LazyColumn(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
-                            MaterialTheme.colorScheme.background,
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.02f)
-                        )
-                    )
-                )
+                .padding(horizontal = 24.dp),
+            contentPadding = PaddingValues(
+                top = padding.calculateTopPadding() + 8.dp,
+                bottom = padding.calculateBottomPadding() + 16.dp
+            ),
+            verticalArrangement = Arrangement.spacedBy(24.dp)
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(top = padding.calculateTopPadding())
-                    .padding(horizontal = 24.dp)
-                    .verticalScroll(rememberScrollState())
-            ) {
-                Spacer(modifier = Modifier.height(8.dp))
-
-                    if (latestRecord == null) {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(24.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            item {
+                if (latestRecord == null) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .padding(24.dp)
+                                .fillMaxWidth(),
+                            horizontalAlignment = Alignment.CenterHorizontally
                         ) {
-                            Column(
-                                modifier = Modifier
-                                    .padding(24.dp)
-                                    .fillMaxWidth(),
-                                horizontalAlignment = Alignment.CenterHorizontally
-                            ) {
-                                Text(
-                                    text = "No BMI yet",
-                                    fontSize = 18.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface
-                                )
-                                Spacer(modifier = Modifier.height(8.dp))
-                                Text(
-                                    text = "Run your first calculation to see your health snapshot here.",
-                                    fontSize = 14.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    textAlign = androidx.compose.ui.text.style.TextAlign.Center
-                                )
-                            }
+                            Text(
+                                text = "No BMI yet",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Text(
+                                text = "Run your first calculation to see your health snapshot here.",
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                            )
                         }
-                    } else {
-                        Card(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(24.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                    }
+                } else {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .padding(24.dp)
+                                .fillMaxWidth(),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(
+                            // Simple Circle BMI display
+                            Box(
                                 modifier = Modifier
-                                    .padding(24.dp)
-                                    .fillMaxWidth(),
-                                verticalAlignment = Alignment.CenterVertically
+                                    .size(100.dp)
+                                    .padding(4.dp),
+                                contentAlignment = Alignment.Center
                             ) {
-                                // Simple Circle BMI display
-                                Box(
-                                    modifier = Modifier
-                                        .size(100.dp)
-                                        .padding(4.dp),
-                                    contentAlignment = Alignment.Center
+                                CircularProgressIndicator(
+                                    progress = { (latestRecord.bmi / 40f).coerceIn(0f, 1f) },
+                                    modifier = Modifier.fillMaxSize(),
+                                    color = when {
+                                        latestRecord.bmi < 18.5f -> Color(0xFF3B82F6)
+                                        latestRecord.bmi < 25f -> Color(0xFF10B981)
+                                        latestRecord.bmi < 30f -> Color(0xFFF59E0B)
+                                        else -> Color(0xFFEF4444)
+                                    },
+                                    strokeWidth = 8.dp,
+                                    trackColor = MaterialTheme.colorScheme.surfaceVariant,
+                                )
+                                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                                    Text(
+                                        text = String.format(Locale.getDefault(), "%.1f", latestRecord.bmi),
+                                        fontSize = 24.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(text = "BMI", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                }
+                            }
+
+                            Spacer(modifier = Modifier.width(24.dp))
+
+                            Column {
+                                Surface(
+                                    color = (when {
+                                        latestRecord.bmi < 18.5f -> Color(0xFF3B82F6)
+                                        latestRecord.bmi < 25f -> Color(0xFF10B981)
+                                        latestRecord.bmi < 30f -> Color(0xFFF59E0B)
+                                        else -> Color(0xFFEF4444)
+                                    }).copy(alpha = 0.1f),
+                                    shape = RoundedCornerShape(8.dp)
                                 ) {
-                                    CircularProgressIndicator(
-                                        progress = { (latestRecord.bmi / 40f).coerceIn(0f, 1f) },
-                                        modifier = Modifier.fillMaxSize(),
+                                    Text(
+                                        text = latestRecord.category,
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                                         color = when {
                                             latestRecord.bmi < 18.5f -> Color(0xFF3B82F6)
                                             latestRecord.bmi < 25f -> Color(0xFF10B981)
                                             latestRecord.bmi < 30f -> Color(0xFFF59E0B)
                                             else -> Color(0xFFEF4444)
                                         },
-                                        strokeWidth = 8.dp,
-                                        trackColor = MaterialTheme.colorScheme.surfaceVariant,
-                                    )
-                                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                                        Text(
-                                            text = String.format(Locale.getDefault(), "%.1f", latestRecord.bmi),
-                                            fontSize = 24.sp,
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        )
-                                        Text(text = "BMI", fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                                    }
-                                }
-
-                                Spacer(modifier = Modifier.width(24.dp))
-
-                                Column {
-                                    Surface(
-                                        color = (when {
-                                            latestRecord.bmi < 18.5f -> Color(0xFF3B82F6)
-                                            latestRecord.bmi < 25f -> Color(0xFF10B981)
-                                            latestRecord.bmi < 30f -> Color(0xFFF59E0B)
-                                            else -> Color(0xFFEF4444)
-                                        }).copy(alpha = 0.1f),
-                                        shape = RoundedCornerShape(8.dp)
-                                    ) {
-                                        Text(
-                                            text = latestRecord.category,
-                                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                                            color = when {
-                                                latestRecord.bmi < 18.5f -> Color(0xFF3B82F6)
-                                                latestRecord.bmi < 25f -> Color(0xFF10B981)
-                                                latestRecord.bmi < 30f -> Color(0xFFF59E0B)
-                                                else -> Color(0xFFEF4444)
-                                            },
-                                            fontWeight = FontWeight.Bold,
-                                            fontSize = 12.sp
-                                        )
-                                    }
-                                    Spacer(modifier = Modifier.height(8.dp))
-                                    val weeklyDiffText = if (bmiRecords.size > 1) {
-                                        val diff = latestRecord.weight - bmiRecords[1].weight
-                                        val sign = if (diff > 0) "+" else ""
-                                        " • $sign${String.format(Locale.getDefault(), "%.1f", diff)} kg this week"
-                                    } else ""
-                                    Text(
-                                        text = "${latestRecord.weight} ${latestRecord.weightUnit} • ${latestRecord.height.toInt()} ${latestRecord.heightUnit}$weeklyDiffText",
-                                        fontSize = 14.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
-                                    Text(
-                                        text = "Updated ${DateFormat.getDateInstance(DateFormat.MEDIUM, Locale.getDefault()).format(latestRecord.date)}",
-                                        fontSize = 12.sp,
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp
                                     )
                                 }
+                                Spacer(modifier = Modifier.height(8.dp))
+                                val weeklyDiffText = if (bmiRecords.size > 1) {
+                                    val diff = latestRecord.weight - bmiRecords[1].weight
+                                    val sign = if (diff > 0) "+" else ""
+                                    " • $sign${String.format(Locale.getDefault(), "%.1f", diff)} kg this week"
+                                } else ""
+                                Text(
+                                    text = "${latestRecord.weight} ${latestRecord.weightUnit} • ${latestRecord.height.toInt()} ${latestRecord.heightUnit}$weeklyDiffText",
+                                    fontSize = 14.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                                Text(
+                                    text = "Updated ${DateFormat.getDateInstance(DateFormat.MEDIUM, Locale.getDefault()).format(latestRecord.date)}",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                )
                             }
                         }
                     }
+                }
+            }
 
-                    Spacer(modifier = Modifier.height(24.dp))
+            item {
+                Button(
+                    onClick = onCalculateClick,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(56.dp),
+                    shape = RoundedCornerShape(16.dp),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Calculate BMI",
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
 
-                    Button(
-                        onClick = onCalculateClick,
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(56.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+            if (latestRecord != null) {
+                item {
+                    GoalProgressCard(
+                        currentWeight = latestRecord.weight,
+                        targetWeight = targetWeight,
+                        startingWeight = startingWeight ?: latestRecord.weight,
+                        onClick = { showTargetDialog = true }
+                    )
+                }
+            }
+
+            if (bmiRecords.isNotEmpty()) {
+                item {
+                    val currentWeight = latestRecord?.weight ?: 0f
+                    val startingWeightVal = startingWeight ?: currentWeight
+                    val weeklyDiff = if (bmiRecords.size > 1)
+                        String.format(Locale.getDefault(), "%.1f kg", currentWeight - bmiRecords[1].weight)
+                    else "0.0 kg"
+
+                    val totalDiff = String.format(Locale.getDefault(), "%.1f kg", currentWeight - startingWeightVal)
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        Icon(Icons.Default.Add, contentDescription = null)
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Calculate BMI",
-                            fontSize = 16.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                        SummaryStatCard("Weekly", weeklyDiff, Color(0xFF10B981), modifier = Modifier.weight(1f))
+                        SummaryStatCard("Total", totalDiff, Color(0xFF10B981), modifier = Modifier.weight(1f))
                     }
+                }
 
-                    if (latestRecord != null) {
-                        Spacer(modifier = Modifier.height(24.dp))
+                item {
+                    TrendCard()
+                }
 
-                        GoalProgressCard(
-                            currentWeight = latestRecord.weight,
-                            targetWeight = targetWeight,
-                            startingWeight = startingWeight ?: latestRecord.weight
-                        )
-                    }
-
-                    if (bmiRecords.isNotEmpty()) {
-                        Spacer(modifier = Modifier.height(24.dp))
-
+                item {
+                    Column {
                         Row(
                             modifier = Modifier.fillMaxWidth(),
                             horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Text(text = "Recent", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                            TextButton(onClick = { /* See all */ }) {
+                            TextButton(onClick = { onNavigate(Screen.History.route) }) {
                                 Text(text = "See all", color = MaterialTheme.colorScheme.primary)
                             }
                         }
-                        
+
                         Card(
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(24.dp),
@@ -410,70 +446,168 @@ fun HomeScreen(
                             }
                         }
                     }
+                }
+            }
 
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    Card(
-                        modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(24.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            item {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(24.dp),
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            modifier = Modifier.padding(16.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                        Box(
+                            modifier = Modifier
+                                .size(40.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                            contentAlignment = Alignment.Center
                         ) {
-                            Box(
-                                modifier = Modifier
-                                    .size(40.dp)
-                                    .clip(RoundedCornerShape(12.dp))
-                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.AutoAwesome,
-                                    contentDescription = null,
-                                    tint = MaterialTheme.colorScheme.primary,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                            Spacer(modifier = Modifier.width(16.dp))
-                            Column(modifier = Modifier.weight(1f)) {
-                                Text(
-                                    text = "AI Insight",
-                                    fontSize = 14.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.primary
-                                )
-                                Text(
-                                    text = if (latestRecord == null) 
-                                        "Run your first calculation — tap for details" 
-                                        else "Weight trending ${if (bmiRecords.size > 1 && bmiRecords[0].weight < bmiRecords[1].weight) "down" else "stable"} — tap for details",
-                                    fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                                )
-                            }
                             Icon(
-                                imageVector = Icons.Default.ChevronRight,
+                                imageVector = Icons.Default.AutoAwesome,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                                tint = MaterialTheme.colorScheme.primary,
+                                modifier = Modifier.size(20.dp)
                             )
                         }
+                        Spacer(modifier = Modifier.width(16.dp))
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = "AI Insight",
+                                fontSize = 14.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                            Text(
+                                text = if (latestRecord == null)
+                                    "Run your first calculation — tap for details"
+                                else "Weight trending ${if (bmiRecords.size > 1 && bmiRecords[0].weight < bmiRecords[1].weight) "down" else "stable"} — tap for details",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        Icon(
+                            imageVector = Icons.Default.ChevronRight,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                        )
                     }
-                    
-                    Spacer(modifier = Modifier.height(24.dp))
-
-                    Spacer(modifier = Modifier.height(padding.calculateBottomPadding() + 24.dp))
                 }
             }
         }
+    }
+}
+
+@Composable
+fun TargetWeightDialog(
+    initialWeight: Float,
+    onDismiss: () -> Unit,
+    onConfirm: (Float) -> Unit
+) {
+    var weight by remember { mutableStateOf(initialWeight) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        title = { Text(text = "Set Goal Weight") },
+        text = {
+            Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                Text(
+                    text = String.format(Locale.getDefault(), "%.1f kg", weight),
+                    fontSize = 48.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.primary
+                )
+                Slider(
+                    value = weight,
+                    onValueChange = { weight = it },
+                    valueRange = 30f..150f,
+                    steps = 1200 // 0.1 increments roughly
+                )
+            }
+        },
+        confirmButton = {
+            Button(onClick = { onConfirm(weight) }) {
+                Text("Confirm")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Cancel")
+            }
+        }
+    )
+}
+
+@Composable
+fun SummaryStatCard(label: String, value: String, valueColor: Color, modifier: Modifier = Modifier) {
+    Card(
+        modifier = modifier,
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Text(text = label, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Spacer(modifier = Modifier.height(4.dp))
+            Text(text = value, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = valueColor)
+        }
+    }
+}
+
+@Composable
+fun TrendCard() {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(24.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+    ) {
+        Column(modifier = Modifier.padding(24.dp)) {
+            Text(
+                text = "Weight Trend",
+                fontSize = 18.sp,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            // Simple Chart Placeholder
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(150.dp),
+                contentAlignment = Alignment.BottomCenter
+            ) {
+                Canvas(modifier = Modifier.fillMaxSize()) {
+                    val path = Path().apply {
+                        moveTo(0f, size.height * 0.2f)
+                        cubicTo(
+                            size.width * 0.3f, size.height * 0.1f,
+                            size.width * 0.6f, size.height * 0.4f,
+                            size.width, size.height * 0.3f
+                        )
+                    }
+                    drawPath(
+                        path = path,
+                        color = Color(0xFF3B82F6),
+                        style = Stroke(width = 3.dp.toPx())
+                    )
+                }
+            }
+        }
+    }
 }
 
 @Composable
 fun GoalProgressCard(
     currentWeight: Float,
     targetWeight: Float,
-    startingWeight: Float
+    startingWeight: Float,
+    onClick: () -> Unit
 ) {
     val diff = targetWeight - currentWeight
     val label = when {
@@ -491,7 +625,8 @@ fun GoalProgressCard(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        onClick = onClick
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(

@@ -23,5 +23,5 @@ dependencyResolutionManagement {
 }
 
 rootProject.name = "AI_BMI_Calculator"
-include(":app")
+include(":composeApp")
  

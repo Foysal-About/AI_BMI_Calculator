@@ -1,5 +1,6 @@
 package com.happylens.ai_bmi_calculator.presentation.home
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -59,25 +60,11 @@ fun HomeScreen(
     val bmiRecords by viewModel.bmiRecords.collectAsState()
     val profileName by viewModel.profileName.collectAsState()
     val allProfiles by viewModel.allProfiles.collectAsState()
-    val targetWeight by viewModel.targetWeight.collectAsState()
-    val startingWeight by viewModel.startingWeight.collectAsState()
     val isTracked by viewModel.isTracked.collectAsState()
     val latestRecord = bmiRecords.firstOrNull()
     val greeting = remember { greetingForCurrentTime() }
 
     var showProfileDropdown by remember { mutableStateOf(false) }
-    var showTargetDialog by remember { mutableStateOf(false) }
-
-    if (showTargetDialog) {
-        TargetWeightDialog(
-            initialWeight = targetWeight,
-            onDismiss = { showTargetDialog = false },
-            onConfirm = {
-                viewModel.updateTargetWeight(it)
-                showTargetDialog = false
-            }
-        )
-    }
 
     Scaffold(
         topBar = {
@@ -363,61 +350,8 @@ fun HomeScreen(
                 }
             }
 
-            if (latestRecord != null && isTracked) {
-                item {
-                    val currentKg = if (latestRecord.weightUnit == "lb") latestRecord.weight / 2.20462f else latestRecord.weight
-                    GoalProgressCard(
-                        currentWeight = currentKg,
-                        targetWeight = targetWeight,
-                        startingWeight = startingWeight ?: currentKg,
-                        displayUnit = latestRecord.weightUnit,
-                        onClick = { showTargetDialog = true }
-                    )
-                }
-            }
 
             if (bmiRecords.isNotEmpty() && isTracked) {
-                item {
-                    val latest = bmiRecords[0]
-                    val currentKg = if (latest.weightUnit == "lb") latest.weight / 2.20462f else latest.weight
-                    val startKg = startingWeight ?: currentKg
-                    val prevKg = if (bmiRecords.size > 1) {
-                        val prev = bmiRecords[1]
-                        if (prev.weightUnit == "lb") prev.weight / 2.20462f else prev.weight
-                    } else currentKg
-
-                    val weeklyDiffKg = currentKg - prevKg
-                    val totalDiffKg = currentKg - startKg
-                    
-                    val unit = latest.weightUnit
-                    val weeklyDiff = if (unit == "lb") weeklyDiffKg * 2.20462f else weeklyDiffKg
-                    val totalDiff = if (unit == "lb") totalDiffKg * 2.20462f else totalDiffKg
-
-                    val weeklyText = String.format(Locale.getDefault(), "%+1.1f %s", weeklyDiff, unit)
-                    val totalText = String.format(Locale.getDefault(), "%+1.1f %s", totalDiff, unit)
-                    
-                    val goalIsLoss = targetWeight < startKg
-                    
-                    val weeklyColor = when {
-                        weeklyDiffKg < -0.1f -> SuccessGreen
-                        weeklyDiffKg > 0.1f -> ErrorRed
-                        else -> MaterialTheme.colorScheme.onSurfaceVariant
-                    }
-                                      
-                    val totalColor = when {
-                        abs(totalDiffKg) < 0.1f -> MaterialTheme.colorScheme.onSurfaceVariant
-                        goalIsLoss -> if (totalDiffKg < 0) SuccessGreen else ErrorRed
-                        else -> if (totalDiffKg > 0) SuccessGreen else ErrorRed
-                    }
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp)
-                    ) {
-                        SummaryStatCard("Weekly", weeklyText, weeklyColor, modifier = Modifier.weight(1f))
-                        SummaryStatCard("Total", totalText, totalColor, modifier = Modifier.weight(1f))
-                    }
-                }
 
                 item {
                     TrendCard(bmiRecords)
@@ -566,64 +500,12 @@ fun HomeScreen(
     }
 }
 
-@Composable
-fun TargetWeightDialog(
-    initialWeight: Float,
-    onDismiss: () -> Unit,
-    onConfirm: (Float) -> Unit
-) {
-    var weight by remember { mutableFloatStateOf(initialWeight) }
 
-    AlertDialog(
-        onDismissRequest = onDismiss,
-        title = { Text(text = "Set Goal Weight") },
-        text = {
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = String.format(Locale.getDefault(), "%.1f kg", weight),
-                    fontSize = 48.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-                Slider(
-                    value = weight,
-                    onValueChange = { weight = it },
-                    valueRange = 30f..150f,
-                    steps = 1200 // 0.1 increments roughly
-                )
-            }
-        },
-        confirmButton = {
-            Button(onClick = { onConfirm(weight) }) {
-                Text("Confirm")
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDismiss) {
-                Text("Cancel")
-            }
-        }
-    )
-}
-
-@Composable
-fun SummaryStatCard(label: String, value: String, valueColor: Color, modifier: Modifier = Modifier) {
-    Card(
-        modifier = modifier,
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-    ) {
-        Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = label, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Spacer(modifier = Modifier.height(4.dp))
-            Text(text = value, fontSize = 18.sp, fontWeight = FontWeight.Bold, color = valueColor)
-        }
-    }
-}
 
 @Composable
 fun TrendCard(bmiRecords: List<BmiRecord>) {
+    var selectedType by remember { mutableStateOf("Weight") }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -631,17 +513,36 @@ fun TrendCard(bmiRecords: List<BmiRecord>) {
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column(modifier = Modifier.padding(24.dp)) {
-            Text(
-                text = "Weight Trend",
-                fontSize = 18.sp,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = if (selectedType == "Weight") "Weight Trend" else "BMI Trend",
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Row(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+                        .padding(4.dp)
+                ) {
+                    TrendTypeOption("Weight", selectedType == "Weight") { selectedType = "Weight" }
+                    TrendTypeOption("BMI", selectedType == "BMI") { selectedType = "BMI" }
+                }
+            }
+
             Spacer(modifier = Modifier.height(24.dp))
             
             if (bmiRecords.size < 2) {
                 Box(
-                    modifier = Modifier.fillMaxWidth().height(100.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(100.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
@@ -651,47 +552,53 @@ fun TrendCard(bmiRecords: List<BmiRecord>) {
                     )
                 }
             } else {
-                val weights = remember(bmiRecords) {
+                val values = remember(bmiRecords, selectedType) {
                     bmiRecords.take(7).reversed().map { record ->
-                        if (record.weightUnit == "lb") record.weight / 2.20462f else record.weight
+                        if (selectedType == "Weight") {
+                            if (record.weightUnit == "lb") record.weight / 2.20462f else record.weight
+                        } else {
+                            record.bmi
+                        }
                     }
                 }
+                
+                val chartColor = if (selectedType == "Weight") InfoBlue else MaterialTheme.colorScheme.primary
                 
                 Canvas(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(150.dp)
                 ) {
-                    val minWeight = weights.minOrNull() ?: 0f
-                    val maxWeight = weights.maxOrNull() ?: 100f
-                    val weightRange = (maxWeight - minWeight).coerceAtLeast(1f)
-                    val canvasPadding = weightRange * 0.15f
+                    val minValue = values.minOrNull() ?: 0f
+                    val maxValue = values.maxOrNull() ?: 100f
+                    val valueRange = (maxValue - minValue).coerceAtLeast(1f)
+                    val canvasPadding = valueRange * 0.15f
                     
-                    val plotMin = minWeight - canvasPadding
-                    val plotMax = maxWeight + canvasPadding
+                    val plotMin = minValue - canvasPadding
+                    val plotMax = maxValue + canvasPadding
                     val plotRange = plotMax - plotMin
                     
-                    val stepX = size.width / (weights.size - 1)
+                    val stepX = size.width / (values.size - 1)
                     val path = Path()
                     
-                    weights.forEachIndexed { index, weight ->
+                    values.forEachIndexed { index, value ->
                         val x = index * stepX
-                        val y = size.height - ((weight - plotMin) / plotRange * size.height)
+                        val y = size.height - ((value - plotMin) / plotRange * size.height)
                         if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
                     }
                     
                     drawPath(
                         path = path,
-                        color = InfoBlue,
+                        color = chartColor,
                         style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
                     )
                     
                     // Add dots
-                    weights.forEachIndexed { index, weight ->
+                    values.forEachIndexed { index, value ->
                         val x = index * stepX
-                        val y = size.height - ((weight - plotMin) / plotRange * size.height)
+                        val y = size.height - ((value - plotMin) / plotRange * size.height)
                         drawCircle(
-                            color = InfoBlue,
+                            color = chartColor,
                             radius = 4.dp.toPx(),
                             center = Offset(x, y)
                         )
@@ -702,104 +609,77 @@ fun TrendCard(bmiRecords: List<BmiRecord>) {
                         )
                     }
                 }
+
+                if (selectedType == "BMI") {
+                    Spacer(modifier = Modifier.height(20.dp))
+                    val maxBmi = values.maxOrNull() ?: 0f
+                    val minBmi = values.minOrNull() ?: 0f
+                    
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        TrendStatCard("High", String.format(Locale.getDefault(), "%.1f", maxBmi), getBmiColor(maxBmi), modifier = Modifier.weight(1f))
+                        TrendStatCard("Low", String.format(Locale.getDefault(), "%.1f", minBmi), getBmiColor(minBmi), modifier = Modifier.weight(1f))
+                    }
+                }
             }
         }
     }
 }
 
 @Composable
-fun GoalProgressCard(
-    currentWeight: Float,
-    targetWeight: Float,
-    startingWeight: Float,
-    displayUnit: String,
-    onClick: () -> Unit
-) {
-    val diff = targetWeight - currentWeight
-    val label = when {
-        diff < -0.05f -> "Lose to"
-        diff > 0.05f -> "Gain to"
-        else -> "Maintain"
-    }
-
-    val progress = remember(currentWeight, targetWeight, startingWeight) {
-        val total = startingWeight - targetWeight
-        if (abs(total) < 0.1f) 1f else ((startingWeight - currentWeight) / total).coerceIn(0f, 1f)
-    }
-
-    // Convert display values
-    val currentDisplay = if (displayUnit == "lb") currentWeight * 2.20462f else currentWeight
-    val targetDisplay = if (displayUnit == "lb") targetWeight * 2.20462f else targetWeight
-
-    Card(
-        modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        onClick = onClick
+fun TrendTypeOption(label: String, isSelected: Boolean, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(8.dp))
+            .background(if (isSelected) MaterialTheme.colorScheme.surface else Color.Transparent)
+            .clickable { onClick() }
+            .padding(horizontal = 12.dp, vertical = 6.dp)
     ) {
-        Column(modifier = Modifier.padding(20.dp)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = "$label ${String.format(Locale.getDefault(), "%.1f %s", targetDisplay, displayUnit)}",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = "${(progress * 100).toInt()}%",
-                    fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.primary
-                )
-            }
+        Text(
+            text = label,
+            fontSize = 12.sp,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
 
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(8.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth(progress)
-                        .fillMaxHeight()
-                        .clip(CircleShape)
-                        .background(
-                            brush = Brush.horizontalGradient(
-                                colors = listOf(
-                                    MaterialTheme.colorScheme.primary,
-                                    SuccessGreen
-                                )
-                            )
-                        )
-                )
-            }
-
-            Spacer(modifier = Modifier.height(12.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = "Now ${String.format(Locale.getDefault(), "%.1f %s", currentDisplay, displayUnit)}",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-                Text(
-                    text = "Target ${String.format(Locale.getDefault(), "%.1f %s", targetDisplay, displayUnit)}",
-                    fontSize = 12.sp,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+@Composable
+fun TrendStatCard(label: String, value: String, valueColor: Color, modifier: Modifier = Modifier) {
+    Surface(
+        modifier = modifier,
+        shape = RoundedCornerShape(16.dp),
+        color = valueColor.copy(alpha = 0.05f),
+        border = BorderStroke(1.dp, valueColor.copy(alpha = 0.1f))
+    ) {
+        Column(
+            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Text(
+                text = label,
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Medium
+            )
+            Text(
+                text = value,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = valueColor
+            )
         }
     }
 }
+
+private fun getBmiColor(bmi: Float): Color {
+    return when {
+        bmi < 18.5f -> InfoBlue
+        bmi < 25f -> SuccessGreen
+        bmi < 30f -> WarningAmber
+        else -> ErrorRed
+    }
+}
+

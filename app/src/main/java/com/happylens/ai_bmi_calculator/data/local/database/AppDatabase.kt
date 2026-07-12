@@ -10,7 +10,7 @@ import com.happylens.ai_bmi_calculator.data.local.entity.BmiEntity
 import com.happylens.ai_bmi_calculator.data.local.entity.ChatMessageEntity
 import com.happylens.ai_bmi_calculator.data.local.entity.ProfileEntity
 
-@Database(entities = [BmiEntity::class, ChatMessageEntity::class, ProfileEntity::class], version = 5, exportSchema = false)
+@Database(entities = [BmiEntity::class, ChatMessageEntity::class, ProfileEntity::class], version = 7, exportSchema = false)
 abstract class AppDatabase : RoomDatabase() {
     abstract fun bmiDao(): BmiDao
     abstract fun profileDao(): ProfileDao

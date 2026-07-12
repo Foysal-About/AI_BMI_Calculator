@@ -7,6 +7,7 @@ import com.happylens.ai_bmi_calculator.domain.model.BmiRecord
 import com.happylens.ai_bmi_calculator.domain.model.UserProfile
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
@@ -47,9 +48,16 @@ class HomeViewModel : ViewModel() {
             initialValue = 65.0f
         )
 
-    val startingWeight: StateFlow<Float?> = bmiRecords.map { records ->
-        records.lastOrNull()?.let { 
-            if (it.weightUnit == "lb") it.weight / 2.20462f else it.weight
+    val startingWeight: StateFlow<Float?> = combine(
+        BmiRepository.userProfile,
+        bmiRecords
+    ) { profile, records ->
+        if (profile.startingWeight > 0f) {
+            profile.startingWeight
+        } else {
+            records.lastOrNull()?.let { 
+                if (it.weightUnit == "lb") it.weight / 2.20462f else it.weight
+            }
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 

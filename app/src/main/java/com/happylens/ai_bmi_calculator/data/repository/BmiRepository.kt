@@ -118,7 +118,21 @@ object BmiRepository {
     fun updateTargetWeight(weight: Float) {
         scope.launch {
             val profile = userProfile.first()
-            updateUserProfile(profile.copy(targetWeight = weight))
+            // If target is being set for the first time, and we have a latest record, use it as start
+            val startWeight = if (profile.startingWeight == 0f) {
+                getLatestRecord()?.let { 
+                    if (it.weightUnit == "lb") it.weight / 2.20462f else it.weight 
+                } ?: 0f
+            } else profile.startingWeight
+            
+            updateUserProfile(profile.copy(targetWeight = weight, startingWeight = startWeight))
+        }
+    }
+
+    fun updateWeightGoal(target: Float, start: Float) {
+        scope.launch {
+            val profile = userProfile.first()
+            updateUserProfile(profile.copy(targetWeight = target, startingWeight = start))
         }
     }
 

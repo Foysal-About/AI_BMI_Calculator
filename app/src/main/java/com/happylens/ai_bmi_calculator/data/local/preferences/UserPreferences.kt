@@ -20,7 +20,12 @@ class UserPreferences(private val context: Context) {
         val USER_NAME = stringPreferencesKey("user_name")
         val USER_AGE = intPreferencesKey("user_age")
         val USER_GENDER = stringPreferencesKey("user_gender")
+        val STARTING_WEIGHT = floatPreferencesKey("starting_weight")
         val TARGET_WEIGHT = floatPreferencesKey("target_weight")
+        val LAST_HEIGHT = floatPreferencesKey("last_height")
+        val LAST_WEIGHT = floatPreferencesKey("last_weight")
+        val LAST_HEIGHT_UNIT = stringPreferencesKey("last_height_unit")
+        val LAST_WEIGHT_UNIT = stringPreferencesKey("last_weight_unit")
         val ONBOARDING_COMPLETED = booleanPreferencesKey("onboarding_completed")
     }
 
@@ -29,7 +34,12 @@ class UserPreferences(private val context: Context) {
             name = preferences[USER_NAME] ?: "",
             age = preferences[USER_AGE] ?: 25,
             gender = Gender.valueOf(preferences[USER_GENDER] ?: Gender.MALE.name),
-            targetWeight = preferences[TARGET_WEIGHT] ?: 65.0f
+            startingWeight = preferences[STARTING_WEIGHT] ?: 0f,
+            targetWeight = preferences[TARGET_WEIGHT] ?: 0f,
+            lastHeight = preferences[LAST_HEIGHT] ?: 170f,
+            lastWeight = preferences[LAST_WEIGHT] ?: 68f,
+            lastHeightUnit = preferences[LAST_HEIGHT_UNIT] ?: "cm",
+            lastWeightUnit = preferences[LAST_WEIGHT_UNIT] ?: "kg"
         )
     }
 
@@ -46,7 +56,12 @@ class UserPreferences(private val context: Context) {
             preferences[USER_NAME] = profile.name
             preferences[USER_AGE] = profile.age
             preferences[USER_GENDER] = profile.gender.name
+            preferences[STARTING_WEIGHT] = profile.startingWeight
             preferences[TARGET_WEIGHT] = profile.targetWeight
+            preferences[LAST_HEIGHT] = profile.lastHeight
+            preferences[LAST_WEIGHT] = profile.lastWeight
+            preferences[LAST_HEIGHT_UNIT] = profile.lastHeightUnit
+            preferences[LAST_WEIGHT_UNIT] = profile.lastWeightUnit
         }
     }
 

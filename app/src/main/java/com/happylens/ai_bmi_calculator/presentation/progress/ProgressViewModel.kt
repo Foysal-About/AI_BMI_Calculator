@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.happylens.ai_bmi_calculator.data.repository.BmiRepository
 import com.happylens.ai_bmi_calculator.domain.model.BmiRecord
+import com.happylens.ai_bmi_calculator.domain.model.UserProfile
 import kotlinx.coroutines.flow.*
 
 class ProgressViewModel : ViewModel() {
@@ -14,26 +15,18 @@ class ProgressViewModel : ViewModel() {
             initialValue = emptyList()
         )
 
-    val targetWeight: StateFlow<Float> = BmiRepository.targetWeight
-        .stateIn(
-            scope = viewModelScope,
-            started = SharingStarted.WhileSubscribed(5000),
-            initialValue = 65.0f
-        )
-
-    fun updateTargetWeight(weight: Float) {
-        BmiRepository.updateTargetWeight(weight)
-    }
-
     fun deleteRecord(recordId: String) {
         BmiRepository.deleteRecord(recordId)
     }
 
-    val currentWeight: StateFlow<Float?> = bmiRecords.map { records ->
-        records.firstOrNull()?.weight
-    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+    val userProfile: StateFlow<UserProfile?> = BmiRepository.userProfile
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = null
+        )
 
-    val startingWeight: StateFlow<Float?> = bmiRecords.map { records ->
-        records.lastOrNull()?.weight
+    val currentBmi: StateFlow<Float?> = bmiRecords.map { records ->
+        records.firstOrNull()?.bmi
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 }

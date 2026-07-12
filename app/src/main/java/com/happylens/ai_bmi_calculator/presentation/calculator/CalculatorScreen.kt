@@ -20,6 +20,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.*
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.drawText
@@ -30,13 +31,14 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.delay
 import com.happylens.ai_bmi_calculator.domain.model.Gender
 import com.happylens.ai_bmi_calculator.presentation.components.CommonTopBar
 import com.happylens.ai_bmi_calculator.ui.theme.ErrorRed
 import com.happylens.ai_bmi_calculator.ui.theme.SuccessGreen
 import com.happylens.ai_bmi_calculator.ui.theme.WarningAmber
 import java.util.Locale
-import kotlin.math.floor
+import kotlin.math.*
 
 private fun formatFeetInches(totalInches: Float): String {
     var feet = floor(totalInches / 12f).toInt()
@@ -55,12 +57,12 @@ fun CalculatorScreen(
     onBackClick: () -> Unit,
     viewModel: CalculatorViewModel = viewModel()
 ) {
-    var gender by remember { mutableStateOf(Gender.MALE) }
-    var age by remember { mutableIntStateOf(25) }
-    var height by remember { mutableFloatStateOf(170f) }
-    var weight by remember { mutableFloatStateOf(68f) }
-    var heightUnit by remember { mutableStateOf("cm") }
-    var weightUnit by remember { mutableStateOf("kg") }
+    val gender by viewModel.gender.collectAsState()
+    val age by viewModel.age.collectAsState()
+    val height by viewModel.height.collectAsState()
+    val weight by viewModel.weight.collectAsState()
+    val heightUnit by viewModel.heightUnit.collectAsState()
+    val weightUnit by viewModel.weightUnit.collectAsState()
     
     val heightInMeters = remember(height, heightUnit) {
         if (heightUnit == "cm") height / 100f else (height * 2.54f) / 100f
@@ -81,6 +83,12 @@ fun CalculatorScreen(
         }
     }
 
+    val goalWeight = remember(heightInMeters, weightUnit, bmi) {
+        val idealBmi = 22.0f
+        val idealKg = idealBmi * (heightInMeters * heightInMeters)
+        if (weightUnit == "kg") idealKg else idealKg * 2.20462f
+    }
+
     val handleBack = {
         viewModel.saveBmiRecord(
             weight = weight,
@@ -88,7 +96,8 @@ fun CalculatorScreen(
             bmi = bmi,
             category = bmiCategory,
             weightUnit = weightUnit,
-            heightUnit = heightUnit
+            heightUnit = heightUnit,
+            goalWeight = goalWeight
         )
         onBackClick()
     }
@@ -151,13 +160,13 @@ fun CalculatorScreen(
                             GenderButton(
                                 text = "Male",
                                 isSelected = gender == Gender.MALE,
-                                onClick = { gender = Gender.MALE },
+                                onClick = { viewModel.updateGender(Gender.MALE) },
                                 modifier = Modifier.weight(1f)
                             )
                             GenderButton(
                                 text = "Female",
                                 isSelected = gender == Gender.FEMALE,
-                                onClick = { gender = Gender.FEMALE },
+                                onClick = { viewModel.updateGender(Gender.FEMALE) },
                                 modifier = Modifier.weight(1f)
                             )
                         }
@@ -183,7 +192,7 @@ fun CalculatorScreen(
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
                         IconButton(
-                            onClick = { if (age > 1) age-- },
+                            onClick = { if (age > 1) viewModel.updateAge(age - 1) },
                             modifier = Modifier
                                 .size(32.dp)
                                 .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CircleShape)
@@ -213,7 +222,7 @@ fun CalculatorScreen(
                             )
                         }
                         IconButton(
-                            onClick = { age++ },
+                            onClick = { viewModel.updateAge(age + 1) },
                             modifier = Modifier
                                 .size(32.dp)
                                 .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CircleShape)
@@ -235,24 +244,25 @@ fun CalculatorScreen(
             MeasurementCard(
                 label = "Height",
                 value = height,
-                onValueChange = { height = it },
+                onValueChange = { viewModel.updateHeight(it) },
                 unitOptions = listOf("cm", "ft/in"),
                 currentUnit = heightUnit,
                 onUnitChange = { newUnit ->
                     if (newUnit != heightUnit) {
-                        height = if (newUnit == "ft/in") {
+                        val newHeight = if (newUnit == "ft/in") {
                             height * 0.393701f
                         } else {
                             height / 0.393701f
                         }
-                        heightUnit = newUnit
+                        viewModel.updateHeight(newHeight)
+                        viewModel.updateHeightUnit(newUnit)
                     }
                 },
                 content = {
                     Ruler(
                         value = height,
                         range = if (heightUnit == "cm") 100f..250f else 36f..108f,
-                        onValueChange = { height = it },
+                        onValueChange = { viewModel.updateHeight(it) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(80.dp),
@@ -270,24 +280,25 @@ fun CalculatorScreen(
             MeasurementCard(
                 label = "Weight",
                 value = weight,
-                onValueChange = { weight = it },
+                onValueChange = { viewModel.updateWeight(it) },
                 unitOptions = listOf("kg", "lb"),
                 currentUnit = weightUnit,
                 onUnitChange = { newUnit ->
                     if (newUnit != weightUnit) {
-                        weight = if (newUnit == "lb") {
+                        val newWeight = if (newUnit == "lb") {
                             weight * 2.20462f
                         } else {
                             weight / 2.20462f
                         }
-                        weightUnit = newUnit
+                        viewModel.updateWeight(newWeight)
+                        viewModel.updateWeightUnit(newUnit)
                     }
                 },
                 content = {
                     Ruler(
                         value = weight,
                         range = if (weightUnit == "kg") 30f..200f else 66f..450f,
-                        onValueChange = { weight = it },
+                        onValueChange = { viewModel.updateWeight(it) },
                         modifier = Modifier
                             .fillMaxWidth()
                             .height(80.dp)
@@ -361,38 +372,69 @@ fun CalculatorScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Ideal weight range
+            // Ideal weight & Goal Card
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
                 colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    val minIdealKg = 18.5f * (heightInMeters * heightInMeters)
-                    val maxIdealKg = 24.9f * (heightInMeters * heightInMeters)
-                    val minIdeal = if (weightUnit == "kg") minIdealKg else minIdealKg * 2.20462f
-                    val maxIdeal = if (weightUnit == "kg") maxIdealKg else maxIdealKg * 2.20462f
-                    
-                    Column {
-                        Text(text = "Ideal weight range", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Column(modifier = Modifier.padding(16.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        val minIdealKg = 18.5f * (heightInMeters * heightInMeters)
+                        val maxIdealKg = 24.9f * (heightInMeters * heightInMeters)
+                        val minIdeal = if (weightUnit == "kg") minIdealKg else minIdealKg * 2.20462f
+                        val maxIdeal = if (weightUnit == "kg") maxIdealKg else maxIdealKg * 2.20462f
+                        
+                        Column {
+                            Text(text = "Ideal weight range", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                text = String.format(Locale.getDefault(), "%.1f %s – %.1f %s", minIdeal, weightUnit, maxIdeal, weightUnit),
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 16.sp,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                        val isRange = bmi in 18.5f..24.9f
                         Text(
-                            text = String.format(Locale.getDefault(), "%.1f %s – %.1f %s", minIdeal, weightUnit, maxIdeal, weightUnit),
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 16.sp,
-                            color = MaterialTheme.colorScheme.onSurface
+                            text = if (isRange) "Healthy ✓" else "Out of range",
+                            color = if (isRange) SuccessGreen else ErrorRed,
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Bold
                         )
                     }
-                    val isRange = bmi in 18.5f..24.9f
-                    Text(
-                        text = if (isRange) "You're in range" else "Out of range",
-                        color = if (isRange) SuccessGreen else ErrorRed,
-                        fontSize = 12.sp,
-                        fontWeight = FontWeight.Bold
+
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 12.dp),
+                        thickness = 0.5.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant
                     )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Column {
+                            Text(text = "Suggested Goal Weight", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            Text(
+                                text = String.format(Locale.getDefault(), "%.1f %s", goalWeight, weightUnit),
+                                fontWeight = FontWeight.ExtraBold,
+                                fontSize = 20.sp,
+                                color = MaterialTheme.colorScheme.primary
+                            )
+                        }
+                        
+                        Icon(
+                            imageVector = Icons.Default.Flag,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
                 }
             }
 
@@ -649,74 +691,145 @@ fun Ruler(
     val tickColorMajor = onSurface.copy(alpha = 0.6f)
     val tickColorMinor = onSurface.copy(alpha = 0.2f)
 
-    Box(
-        modifier = modifier
-            .fillMaxWidth()
-            .scrollable(scrollableState, Orientation.Horizontal)
+    Row(
+        modifier = modifier,
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val width = size.width
-            val height = size.height
-            val centerX = width / 2
-            
-            val halfWidthUnits = centerX / spacingPx
-            // Use floor for more stable tick generation during scroll
-            val startValue = kotlin.math.floor(value - halfWidthUnits).toInt().coerceAtLeast(currentRange.start.toInt() - 1)
-            val endValue = kotlin.math.ceil(value + halfWidthUnits).toInt().coerceAtMost(currentRange.endInclusive.toInt() + 1)
+        ControlIconButton(
+            icon = Icons.Default.Remove,
+            onClick = { currentOnValueChange((value - 1f).coerceIn(currentRange)) },
+            enabled = value > currentRange.start
+        )
 
-            for (tickValue in startValue..endValue) {
-                val x = centerX + (tickValue - value) * spacingPx
+        Box(
+            modifier = Modifier
+                .weight(1f)
+                .fillMaxHeight()
+                .scrollable(scrollableState, Orientation.Horizontal)
+        ) {
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val width = size.width
+                val height = size.height
+                val centerX = width / 2
                 
-                if (x < -60 || x > width + 60) continue
-                
-                val isMajor = tickValue % majorStep == 0
-                val tickHeight = if (isMajor) 32.dp.toPx() else 16.dp.toPx()
-                val tickColor = if (isMajor) tickColorMajor else tickColorMinor
-                val strokeWidth = if (isMajor) 2.dp.toPx() else 1.dp.toPx()
+                val halfWidthUnits = centerX / spacingPx
+                // Use floor for more stable tick generation during scroll
+                val startValue = floor(value - halfWidthUnits).toInt().coerceAtLeast(currentRange.start.toInt() - 1)
+                val endValue = ceil(value + halfWidthUnits).toInt().coerceAtMost(currentRange.endInclusive.toInt() + 1)
 
+                for (tickValue in startValue..endValue) {
+                    val x = centerX + (tickValue - value) * spacingPx
+                    
+                    if (x < -60 || x > width + 60) continue
+                    
+                    val isMajor = tickValue % majorStep == 0
+                    val tickHeight = if (isMajor) 32.dp.toPx() else 16.dp.toPx()
+                    val tickColor = if (isMajor) tickColorMajor else tickColorMinor
+                    val strokeWidth = if (isMajor) 2.dp.toPx() else 1.dp.toPx()
+
+                    drawLine(
+                        color = tickColor,
+                        start = Offset(x, (height - tickHeight) / 2),
+                        end = Offset(x, (height + tickHeight) / 2),
+                        strokeWidth = strokeWidth,
+                        cap = StrokeCap.Round
+                    )
+
+                    if (isMajor) {
+                        val label = labelFormatter(tickValue)
+                        // Optimization: Only measure if needed, or use a fixed size to avoid jumping
+                        drawText(
+                            textMeasurer = textMeasurer,
+                            text = label,
+                            style = labelStyle,
+                            topLeft = Offset(
+                                x - 25.dp.toPx(),
+                                (height + tickHeight) / 2 + 4.dp.toPx()
+                            ),
+                            size = Size(50.dp.toPx(), 20.dp.toPx())
+                        )
+                    }
+                }
+
+                // Central indicator (needle) - Drawn last to be on top
                 drawLine(
-                    color = tickColor,
-                    start = Offset(x, (height - tickHeight) / 2),
-                    end = Offset(x, (height + tickHeight) / 2),
-                    strokeWidth = strokeWidth,
+                    color = primaryColor,
+                    start = Offset(centerX, (height - 48.dp.toPx()) / 2),
+                    end = Offset(centerX, (height + 48.dp.toPx()) / 2),
+                    strokeWidth = 3.dp.toPx(),
                     cap = StrokeCap.Round
                 )
-
-                if (isMajor) {
-                    val label = labelFormatter(tickValue)
-                    // Optimization: Only measure if needed, or use a fixed size to avoid jumping
-                    drawText(
-                        textMeasurer = textMeasurer,
-                        text = label,
-                        style = labelStyle,
-                        topLeft = Offset(
-                            x - 25.dp.toPx(),
-                            (height + tickHeight) / 2 + 4.dp.toPx()
-                        ),
-                        size = Size(50.dp.toPx(), 20.dp.toPx())
-                    )
+                
+                // Pointer at top - Draw with fixed geometry to avoid allocations in draw loop
+                val pointerSize = 12.dp.toPx()
+                val pointerPath = Path().apply {
+                    moveTo(centerX, (height - 48.dp.toPx()) / 2)
+                    lineTo(centerX - pointerSize / 2, (height - 48.dp.toPx()) / 2 - 8.dp.toPx())
+                    lineTo(centerX + pointerSize / 2, (height - 48.dp.toPx()) / 2 - 8.dp.toPx())
+                    close()
                 }
+                drawPath(pointerPath, primaryColor)
             }
-
-            // Central indicator (needle) - Drawn last to be on top
-            drawLine(
-                color = primaryColor,
-                start = Offset(centerX, (height - 48.dp.toPx()) / 2),
-                end = Offset(centerX, (height + 48.dp.toPx()) / 2),
-                strokeWidth = 3.dp.toPx(),
-                cap = StrokeCap.Round
-            )
-            
-            // Pointer at top - Draw with fixed geometry to avoid allocations in draw loop
-            val pointerSize = 12.dp.toPx()
-            val pointerPath = Path().apply {
-                moveTo(centerX, (height - 48.dp.toPx()) / 2)
-                lineTo(centerX - pointerSize / 2, (height - 48.dp.toPx()) / 2 - 8.dp.toPx())
-                lineTo(centerX + pointerSize / 2, (height - 48.dp.toPx()) / 2 - 8.dp.toPx())
-                close()
-            }
-            drawPath(pointerPath, primaryColor)
         }
+
+        ControlIconButton(
+            icon = Icons.Default.Add,
+            onClick = { currentOnValueChange((value + 1f).coerceIn(currentRange)) },
+            enabled = value < currentRange.endInclusive
+        )
+    }
+}
+
+@Composable
+private fun ControlIconButton(
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    onClick: () -> Unit,
+    enabled: Boolean,
+) {
+    val currentOnClick by rememberUpdatedState(onClick)
+    val pressed = remember { mutableStateOf(false) }
+
+    LaunchedEffect(pressed.value, enabled) {
+        if (pressed.value && enabled) {
+            currentOnClick()
+            delay(500)
+            while (pressed.value && enabled) {
+                currentOnClick()
+                delay(100)
+            }
+        }
+    }
+
+    Box(
+        modifier = Modifier
+            .size(36.dp)
+            .clip(CircleShape)
+            .background(
+                if (enabled) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.05f)
+            )
+            .pointerInput(enabled) {
+                if (!enabled) return@pointerInput
+                detectTapGestures(
+                    onPress = {
+                        pressed.value = true
+                        try {
+                            awaitRelease()
+                        } finally {
+                            pressed.value = false
+                        }
+                    }
+                )
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = if (enabled) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+            modifier = Modifier.size(20.dp)
+        )
     }
 }
 
@@ -802,9 +915,9 @@ fun BMIGauge(bmi: Float, modifier: Modifier = Modifier) {
                 else -> startAngle + 165f + ((bmi - 30f) / 10f).coerceIn(0f, 1f) * 15f
             }
             
-            val radian = Math.toRadians(angle.toDouble())
-            val pointerX = arcCenter.x + radius * Math.cos(radian).toFloat()
-            val pointerY = arcCenter.y + radius * Math.sin(radian).toFloat()
+            val radian = angle * PI / 180.0
+            val pointerX = arcCenter.x + radius * cos(radian).toFloat()
+            val pointerY = arcCenter.y + radius * sin(radian).toFloat()
             
             // Surface-colored outer circle for pointer
             drawCircle(

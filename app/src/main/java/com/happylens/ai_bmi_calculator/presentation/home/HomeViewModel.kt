@@ -22,7 +22,15 @@ class HomeViewModel : ViewModel() {
         .stateIn(
             scope = viewModelScope,
             started = SharingStarted.WhileSubscribed(5000),
-            initialValue = "Foysal"
+            initialValue = "Guest User"
+        )
+
+    val isTracked: StateFlow<Boolean> = BmiRepository.userProfile
+        .map { it.isTracked }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(5000),
+            initialValue = true
         )
 
     val allProfiles: StateFlow<List<UserProfile>> = BmiRepository.allProfiles
@@ -40,7 +48,15 @@ class HomeViewModel : ViewModel() {
         )
 
     val startingWeight: StateFlow<Float?> = bmiRecords.map { records ->
-        records.lastOrNull()?.weight
+        records.lastOrNull()?.let { 
+            if (it.weightUnit == "lb") it.weight / 2.20462f else it.weight
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+
+    val currentWeightKg: StateFlow<Float?> = bmiRecords.map { records ->
+        records.firstOrNull()?.let {
+            if (it.weightUnit == "lb") it.weight / 2.20462f else it.weight
+        }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
     fun selectProfile(name: String) {

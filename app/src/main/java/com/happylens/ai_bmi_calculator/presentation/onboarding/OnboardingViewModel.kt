@@ -29,14 +29,22 @@ class OnboardingViewModel : ViewModel() {
 
     fun completeOnboarding() {
         viewModelScope.launch {
+            val nameToSave = _uiState.value.name.ifBlank { "Guest User" }
             val profile = UserProfile(
-                name = _uiState.value.name,
+                name = nameToSave,
                 age = _uiState.value.age,
                 gender = _uiState.value.gender,
                 isTracked = true
             )
             BmiRepository.updateUserProfile(profile)
             BmiRepository.updateProfileName(profile.name)
+            BmiRepository.setOnboardingCompleted(true)
+        }
+    }
+
+    fun skipOnboarding() {
+        viewModelScope.launch {
+            BmiRepository.updateProfileName("Guest User")
             BmiRepository.setOnboardingCompleted(true)
         }
     }

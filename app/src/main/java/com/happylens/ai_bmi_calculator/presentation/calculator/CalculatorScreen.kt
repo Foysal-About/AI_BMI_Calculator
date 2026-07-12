@@ -1,5 +1,6 @@
 package com.happylens.ai_bmi_calculator.presentation.calculator
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.*
 import androidx.compose.foundation.layout.*
@@ -31,6 +32,9 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.happylens.ai_bmi_calculator.domain.model.Gender
 import com.happylens.ai_bmi_calculator.presentation.components.CommonTopBar
+import com.happylens.ai_bmi_calculator.ui.theme.ErrorRed
+import com.happylens.ai_bmi_calculator.ui.theme.SuccessGreen
+import com.happylens.ai_bmi_calculator.ui.theme.WarningAmber
 import java.util.Locale
 import kotlin.math.floor
 
@@ -71,17 +75,31 @@ fun CalculatorScreen(
     val (bmiCategory, categoryColor) = remember(bmi, primaryColor) {
         when {
             bmi < 18.5f -> "Underweight" to primaryColor
-            bmi < 25f -> "Normal" to Color(0xFF10B981)
-            bmi < 30f -> "Overweight" to Color(0xFFF59E0B)
-            else -> "Obese" to Color(0xFFEF4444)
+            bmi < 25f -> "Normal" to SuccessGreen
+            bmi < 30f -> "Overweight" to WarningAmber
+            else -> "Obese" to ErrorRed
         }
     }
+
+    val handleBack = {
+        viewModel.saveBmiRecord(
+            weight = weight,
+            height = height,
+            bmi = bmi,
+            category = bmiCategory,
+            weightUnit = weightUnit,
+            heightUnit = heightUnit
+        )
+        onBackClick()
+    }
+
+    BackHandler(onBack = handleBack)
 
     Scaffold(
         topBar = {
             CommonTopBar(
                 title = "BMI Calculator",
-                onBackClick = onBackClick
+                onBackClick = handleBack
             )
         },
         containerColor = Color.Transparent
@@ -283,7 +301,7 @@ fun CalculatorScreen(
                 text = "● YOUR RESULT • LIVE",
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF10B981),
+                color = SuccessGreen,
                 modifier = Modifier.padding(start = 8.dp)
             )
 
@@ -371,7 +389,7 @@ fun CalculatorScreen(
                     val isRange = bmi in 18.5f..24.9f
                     Text(
                         text = if (isRange) "You're in range" else "Out of range",
-                        color = if (isRange) Color(0xFF10B981) else Color(0xFFEF4444),
+                        color = if (isRange) SuccessGreen else ErrorRed,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -392,9 +410,9 @@ fun CalculatorScreen(
                     BMICategoryItem("Very severely underweight", "≤ 15.9", MaterialTheme.colorScheme.primary, bmi <= 15.9f)
                     BMICategoryItem("Severely underweight", "16.0 – 16.9", MaterialTheme.colorScheme.primary, bmi in 16.0f..16.9f)
                     BMICategoryItem("Underweight", "17.0 – 18.4", MaterialTheme.colorScheme.primary.copy(alpha = 0.7f), bmi in 17.0f..18.4f)
-                    BMICategoryItem("Normal", "18.5 – 24.9", Color(0xFF10B981), bmi in 18.5f..24.9f)
-                    BMICategoryItem("Overweight", "25.0 – 29.9", Color(0xFFF59E0B), bmi in 25.0f..29.9f)
-                    BMICategoryItem("Obese Class I", "30.0 – 34.9", Color(0xFFEF4444), bmi in 30.0f..34.9f)
+                    BMICategoryItem("Normal", "18.5 – 24.9", SuccessGreen, bmi in 18.5f..24.9f)
+                    BMICategoryItem("Overweight", "25.0 – 29.9", WarningAmber, bmi in 25.0f..29.9f)
+                    BMICategoryItem("Obese Class I", "30.0 – 34.9", ErrorRed, bmi in 30.0f..34.9f)
                     BMICategoryItem("Obese Class II", "35.0 – 39.9", Color(0xFFB91C1C), bmi in 35.0f..39.9f)
                     BMICategoryItem("Obese Class III", "≥ 40.0", Color(0xFF7F1D1D), bmi >= 40.0f)
                 }
@@ -430,27 +448,6 @@ fun CalculatorScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Button(
-                onClick = {
-                    viewModel.saveBmiRecord(
-                        weight = weight,
-                        height = height,
-                        bmi = bmi,
-                        category = bmiCategory,
-                        weightUnit = weightUnit,
-                        heightUnit = heightUnit
-                    )
-                    onBackClick()
-                },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
-            ) {
-                Text(text = "Save to history", fontWeight = FontWeight.Bold, fontSize = 16.sp)
-            }
-            
             Spacer(modifier = Modifier.height(24.dp))
         }
     }
@@ -726,9 +723,9 @@ fun Ruler(
 @Composable
 fun BMIGauge(bmi: Float, modifier: Modifier = Modifier) {
     val primaryColor = MaterialTheme.colorScheme.primary
-    val successColor = Color(0xFF10B981)
-    val warningColor = Color(0xFFF59E0B)
-    val errorColor = Color(0xFFEF4444)
+    val successColor = SuccessGreen
+    val warningColor = WarningAmber
+    val errorColor = ErrorRed
     val surfaceColor = MaterialTheme.colorScheme.surface
 
     Box(

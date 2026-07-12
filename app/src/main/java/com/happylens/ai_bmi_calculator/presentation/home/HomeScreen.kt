@@ -17,7 +17,12 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.StrokeJoin
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.geometry.Offset
+import com.happylens.ai_bmi_calculator.domain.model.BmiRecord
+import kotlin.math.abs
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -26,6 +31,10 @@ import com.happylens.ai_bmi_calculator.presentation.components.CommonTopBar
 
 import com.happylens.ai_bmi_calculator.presentation.navigation.BottomNavigationBar
 import com.happylens.ai_bmi_calculator.presentation.navigation.Screen
+import com.happylens.ai_bmi_calculator.ui.theme.ErrorRed
+import com.happylens.ai_bmi_calculator.ui.theme.InfoBlue
+import com.happylens.ai_bmi_calculator.ui.theme.SuccessGreen
+import com.happylens.ai_bmi_calculator.ui.theme.WarningAmber
 import androidx.compose.runtime.remember
 import java.util.Locale
 import java.util.Date
@@ -52,6 +61,7 @@ fun HomeScreen(
     val allProfiles by viewModel.allProfiles.collectAsState()
     val targetWeight by viewModel.targetWeight.collectAsState()
     val startingWeight by viewModel.startingWeight.collectAsState()
+    val isTracked by viewModel.isTracked.collectAsState()
     val latestRecord = bmiRecords.firstOrNull()
     val greeting = remember { greetingForCurrentTime() }
 
@@ -72,6 +82,7 @@ fun HomeScreen(
     Scaffold(
         topBar = {
             CommonTopBar(
+                modifier = Modifier.padding(horizontal = 8.dp),
                 titleContent = {
                     Box {
                         Column(
@@ -96,7 +107,7 @@ fun HomeScreen(
                                     imageVector = Icons.Default.KeyboardArrowDown,
                                     contentDescription = null,
                                     tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    modifier = Modifier.size(24.dp).padding(top = 4.dp)
+                                    modifier = Modifier.size(24.dp)
                                 )
                             }
                         }
@@ -128,10 +139,10 @@ fun HomeScreen(
                                                 .size(24.dp)
                                                 .clip(CircleShape)
                                                 .background(
-                                                    if (name == "Foysal") MaterialTheme.colorScheme.primary 
+                                                    if (name == "Guest User") Color.Gray
                                                     else if (name == "Family") Color(0xFF4CAF50)
                                                     else if (name == "Alex") Color(0xFF8B5CF6)
-                                                    else Color(0xFFF59E0B)
+                                                    else MaterialTheme.colorScheme.primary
                                                 ),
                                             contentAlignment = Alignment.Center
                                         ) {
@@ -169,7 +180,7 @@ fun HomeScreen(
                         BadgedBox(
                             badge = {
                                 Badge(
-                                    containerColor = Color(0xFFEF4444),
+                                    containerColor = ErrorRed,
                                     contentColor = Color.White,
                                 ) {
                                     Text("4")
@@ -267,10 +278,10 @@ fun HomeScreen(
                                     progress = { (latestRecord.bmi / 40f).coerceIn(0f, 1f) },
                                     modifier = Modifier.fillMaxSize(),
                                     color = when {
-                                        latestRecord.bmi < 18.5f -> Color(0xFF3B82F6)
-                                        latestRecord.bmi < 25f -> Color(0xFF10B981)
-                                        latestRecord.bmi < 30f -> Color(0xFFF59E0B)
-                                        else -> Color(0xFFEF4444)
+                                        latestRecord.bmi < 18.5f -> InfoBlue
+                                        latestRecord.bmi < 25f -> SuccessGreen
+                                        latestRecord.bmi < 30f -> WarningAmber
+                                        else -> ErrorRed
                                     },
                                     strokeWidth = 8.dp,
                                     trackColor = MaterialTheme.colorScheme.surfaceVariant,
@@ -291,10 +302,10 @@ fun HomeScreen(
                             Column {
                                 Surface(
                                     color = (when {
-                                        latestRecord.bmi < 18.5f -> Color(0xFF3B82F6)
-                                        latestRecord.bmi < 25f -> Color(0xFF10B981)
-                                        latestRecord.bmi < 30f -> Color(0xFFF59E0B)
-                                        else -> Color(0xFFEF4444)
+                                        latestRecord.bmi < 18.5f -> InfoBlue
+                                        latestRecord.bmi < 25f -> SuccessGreen
+                                        latestRecord.bmi < 30f -> WarningAmber
+                                        else -> ErrorRed
                                     }).copy(alpha = 0.1f),
                                     shape = RoundedCornerShape(8.dp)
                                 ) {
@@ -302,17 +313,17 @@ fun HomeScreen(
                                         text = latestRecord.category,
                                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
                                         color = when {
-                                            latestRecord.bmi < 18.5f -> Color(0xFF3B82F6)
-                                            latestRecord.bmi < 25f -> Color(0xFF10B981)
-                                            latestRecord.bmi < 30f -> Color(0xFFF59E0B)
-                                            else -> Color(0xFFEF4444)
+                                            latestRecord.bmi < 18.5f -> InfoBlue
+                                            latestRecord.bmi < 25f -> SuccessGreen
+                                            latestRecord.bmi < 30f -> WarningAmber
+                                            else -> ErrorRed
                                         },
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 12.sp
                                     )
                                 }
                                 Spacer(modifier = Modifier.height(8.dp))
-                                val weeklyDiffText = if (bmiRecords.size > 1) {
+                                val weeklyDiffText = if (bmiRecords.size > 1 && isTracked) {
                                     val diff = latestRecord.weight - bmiRecords[1].weight
                                     val sign = if (diff > 0) "+" else ""
                                     " • $sign${String.format(Locale.getDefault(), "%.1f", diff)} kg this week"
@@ -352,38 +363,64 @@ fun HomeScreen(
                 }
             }
 
-            if (latestRecord != null) {
+            if (latestRecord != null && isTracked) {
                 item {
+                    val currentKg = if (latestRecord.weightUnit == "lb") latestRecord.weight / 2.20462f else latestRecord.weight
                     GoalProgressCard(
-                        currentWeight = latestRecord.weight,
+                        currentWeight = currentKg,
                         targetWeight = targetWeight,
-                        startingWeight = startingWeight ?: latestRecord.weight,
+                        startingWeight = startingWeight ?: currentKg,
+                        displayUnit = latestRecord.weightUnit,
                         onClick = { showTargetDialog = true }
                     )
                 }
             }
 
-            if (bmiRecords.isNotEmpty()) {
+            if (bmiRecords.isNotEmpty() && isTracked) {
                 item {
-                    val currentWeight = latestRecord?.weight ?: 0f
-                    val startingWeightVal = startingWeight ?: currentWeight
-                    val weeklyDiff = if (bmiRecords.size > 1)
-                        String.format(Locale.getDefault(), "%.1f kg", currentWeight - bmiRecords[1].weight)
-                    else "0.0 kg"
+                    val latest = bmiRecords[0]
+                    val currentKg = if (latest.weightUnit == "lb") latest.weight / 2.20462f else latest.weight
+                    val startKg = startingWeight ?: currentKg
+                    val prevKg = if (bmiRecords.size > 1) {
+                        val prev = bmiRecords[1]
+                        if (prev.weightUnit == "lb") prev.weight / 2.20462f else prev.weight
+                    } else currentKg
 
-                    val totalDiff = String.format(Locale.getDefault(), "%.1f kg", currentWeight - startingWeightVal)
+                    val weeklyDiffKg = currentKg - prevKg
+                    val totalDiffKg = currentKg - startKg
+                    
+                    val unit = latest.weightUnit
+                    val weeklyDiff = if (unit == "lb") weeklyDiffKg * 2.20462f else weeklyDiffKg
+                    val totalDiff = if (unit == "lb") totalDiffKg * 2.20462f else totalDiffKg
+
+                    val weeklyText = String.format(Locale.getDefault(), "%+1.1f %s", weeklyDiff, unit)
+                    val totalText = String.format(Locale.getDefault(), "%+1.1f %s", totalDiff, unit)
+                    
+                    val goalIsLoss = targetWeight < startKg
+                    
+                    val weeklyColor = when {
+                        weeklyDiffKg < -0.1f -> SuccessGreen
+                        weeklyDiffKg > 0.1f -> ErrorRed
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant
+                    }
+                                      
+                    val totalColor = when {
+                        abs(totalDiffKg) < 0.1f -> MaterialTheme.colorScheme.onSurfaceVariant
+                        goalIsLoss -> if (totalDiffKg < 0) SuccessGreen else ErrorRed
+                        else -> if (totalDiffKg > 0) SuccessGreen else ErrorRed
+                    }
 
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(16.dp)
                     ) {
-                        SummaryStatCard("Weekly", weeklyDiff, Color(0xFF10B981), modifier = Modifier.weight(1f))
-                        SummaryStatCard("Total", totalDiff, Color(0xFF10B981), modifier = Modifier.weight(1f))
+                        SummaryStatCard("Weekly", weeklyText, weeklyColor, modifier = Modifier.weight(1f))
+                        SummaryStatCard("Total", totalText, totalColor, modifier = Modifier.weight(1f))
                     }
                 }
 
                 item {
-                    TrendCard()
+                    TrendCard(bmiRecords)
                 }
 
                 item {
@@ -419,10 +456,10 @@ fun HomeScreen(
                                                 .clip(CircleShape)
                                                 .background(
                                                     when {
-                                                        record.bmi < 18.5f -> Color(0xFF3B82F6)
-                                                        record.bmi < 25f -> Color(0xFF10B981)
-                                                        record.bmi < 30f -> Color(0xFFF59E0B)
-                                                        else -> Color(0xFFEF4444)
+                                                        record.bmi < 18.5f -> InfoBlue
+                                                        record.bmi < 25f -> SuccessGreen
+                                                        record.bmi < 30f -> WarningAmber
+                                                        else -> ErrorRed
                                                     }
                                                 )
                                         )
@@ -442,10 +479,10 @@ fun HomeScreen(
                                             text = String.format(Locale.getDefault(), "%.1f", record.bmi),
                                             fontWeight = FontWeight.Bold,
                                             color = when {
-                                                record.bmi < 18.5f -> Color(0xFF3B82F6)
-                                                record.bmi < 25f -> Color(0xFF10B981)
-                                                record.bmi < 30f -> Color(0xFFF59E0B)
-                                                else -> Color(0xFFEF4444)
+                                                record.bmi < 18.5f -> InfoBlue
+                                                record.bmi < 25f -> SuccessGreen
+                                                record.bmi < 30f -> WarningAmber
+                                                else -> ErrorRed
                                             }
                                         )
                                     }
@@ -459,52 +496,69 @@ fun HomeScreen(
                 }
             }
 
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(24.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
+            if (isTracked || bmiRecords.isNotEmpty()) {
+                item {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(24.dp),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+                        onClick = { onNavigate(Screen.AI.route) }
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(40.dp)
-                                .clip(RoundedCornerShape(12.dp))
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-                            contentAlignment = Alignment.Center
+                        Row(
+                            modifier = Modifier.padding(16.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.AutoAwesome,
+                                    contentDescription = null,
+                                    tint = MaterialTheme.colorScheme.primary,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                            Spacer(modifier = Modifier.width(16.dp))
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    text = "AI Insight",
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.primary
+                                )
+                                val insightText = remember(bmiRecords) {
+                                    if (latestRecord == null) {
+                                        "Run your first calculation — tap for details"
+                                    } else {
+                                        val trend = if (bmiRecords.size > 1) {
+                                            val diff = (if (bmiRecords[0].weightUnit == "lb") bmiRecords[0].weight / 2.20462f else bmiRecords[0].weight) - 
+                                                       (if (bmiRecords[1].weightUnit == "lb") bmiRecords[1].weight / 2.20462f else bmiRecords[1].weight)
+                                            when {
+                                                diff < -0.1f -> "down"
+                                                diff > 0.1f -> "up"
+                                                else -> "stable"
+                                            }
+                                        } else "stable"
+                                        "Weight trending $trend — tap for details"
+                                    }
+                                }
+                                Text(
+                                    text = insightText,
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
                             Icon(
-                                imageVector = Icons.Default.AutoAwesome,
+                                imageVector = Icons.Default.ChevronRight,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.primary,
-                                modifier = Modifier.size(20.dp)
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
                             )
                         }
-                        Spacer(modifier = Modifier.width(16.dp))
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = "AI Insight",
-                                fontSize = 14.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.primary
-                            )
-                            Text(
-                                text = if (latestRecord == null)
-                                    "Run your first calculation — tap for details"
-                                else "Weight trending ${if (bmiRecords.size > 1 && bmiRecords[0].weight < bmiRecords[1].weight) "down" else "stable"} — tap for details",
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                        Icon(
-                            imageVector = Icons.Default.ChevronRight,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
-                        )
                     }
                 }
             }
@@ -518,7 +572,7 @@ fun TargetWeightDialog(
     onDismiss: () -> Unit,
     onConfirm: (Float) -> Unit
 ) {
-    var weight by remember { mutableStateOf(initialWeight) }
+    var weight by remember { mutableFloatStateOf(initialWeight) }
 
     AlertDialog(
         onDismissRequest = onDismiss,
@@ -569,7 +623,7 @@ fun SummaryStatCard(label: String, value: String, valueColor: Color, modifier: M
 }
 
 @Composable
-fun TrendCard() {
+fun TrendCard(bmiRecords: List<BmiRecord>) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
@@ -585,27 +639,68 @@ fun TrendCard() {
             )
             Spacer(modifier = Modifier.height(24.dp))
             
-            // Simple Chart Placeholder
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(150.dp),
-                contentAlignment = Alignment.BottomCenter
-            ) {
-                Canvas(modifier = Modifier.fillMaxSize()) {
-                    val path = Path().apply {
-                        moveTo(0f, size.height * 0.2f)
-                        cubicTo(
-                            size.width * 0.3f, size.height * 0.1f,
-                            size.width * 0.6f, size.height * 0.4f,
-                            size.width, size.height * 0.3f
-                        )
+            if (bmiRecords.size < 2) {
+                Box(
+                    modifier = Modifier.fillMaxWidth().height(100.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Add more records to see trend",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 14.sp
+                    )
+                }
+            } else {
+                val weights = remember(bmiRecords) {
+                    bmiRecords.take(7).reversed().map { record ->
+                        if (record.weightUnit == "lb") record.weight / 2.20462f else record.weight
                     }
+                }
+                
+                Canvas(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(150.dp)
+                ) {
+                    val minWeight = weights.minOrNull() ?: 0f
+                    val maxWeight = weights.maxOrNull() ?: 100f
+                    val weightRange = (maxWeight - minWeight).coerceAtLeast(1f)
+                    val canvasPadding = weightRange * 0.15f
+                    
+                    val plotMin = minWeight - canvasPadding
+                    val plotMax = maxWeight + canvasPadding
+                    val plotRange = plotMax - plotMin
+                    
+                    val stepX = size.width / (weights.size - 1)
+                    val path = Path()
+                    
+                    weights.forEachIndexed { index, weight ->
+                        val x = index * stepX
+                        val y = size.height - ((weight - plotMin) / plotRange * size.height)
+                        if (index == 0) path.moveTo(x, y) else path.lineTo(x, y)
+                    }
+                    
                     drawPath(
                         path = path,
-                        color = Color(0xFF3B82F6),
-                        style = Stroke(width = 3.dp.toPx())
+                        color = InfoBlue,
+                        style = Stroke(width = 3.dp.toPx(), cap = StrokeCap.Round, join = StrokeJoin.Round)
                     )
+                    
+                    // Add dots
+                    weights.forEachIndexed { index, weight ->
+                        val x = index * stepX
+                        val y = size.height - ((weight - plotMin) / plotRange * size.height)
+                        drawCircle(
+                            color = InfoBlue,
+                            radius = 4.dp.toPx(),
+                            center = Offset(x, y)
+                        )
+                        drawCircle(
+                            color = Color.White,
+                            radius = 2.dp.toPx(),
+                            center = Offset(x, y)
+                        )
+                    }
                 }
             }
         }
@@ -617,6 +712,7 @@ fun GoalProgressCard(
     currentWeight: Float,
     targetWeight: Float,
     startingWeight: Float,
+    displayUnit: String,
     onClick: () -> Unit
 ) {
     val diff = targetWeight - currentWeight
@@ -628,8 +724,12 @@ fun GoalProgressCard(
 
     val progress = remember(currentWeight, targetWeight, startingWeight) {
         val total = startingWeight - targetWeight
-        if (total == 0f) 1f else ((startingWeight - currentWeight) / total).coerceIn(0f, 1f)
+        if (abs(total) < 0.1f) 1f else ((startingWeight - currentWeight) / total).coerceIn(0f, 1f)
     }
+
+    // Convert display values
+    val currentDisplay = if (displayUnit == "lb") currentWeight * 2.20462f else currentWeight
+    val targetDisplay = if (displayUnit == "lb") targetWeight * 2.20462f else targetWeight
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -645,7 +745,7 @@ fun GoalProgressCard(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = "$label ${String.format(Locale.getDefault(), "%.1f", targetWeight)} kg",
+                    text = "$label ${String.format(Locale.getDefault(), "%.1f %s", targetDisplay, displayUnit)}",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = MaterialTheme.colorScheme.onSurface
@@ -676,7 +776,7 @@ fun GoalProgressCard(
                             brush = Brush.horizontalGradient(
                                 colors = listOf(
                                     MaterialTheme.colorScheme.primary,
-                                    Color(0xFF10B981)
+                                    SuccessGreen
                                 )
                             )
                         )
@@ -690,12 +790,12 @@ fun GoalProgressCard(
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text(
-                    text = "Now ${String.format(Locale.getDefault(), "%.1f", currentWeight)} kg",
+                    text = "Now ${String.format(Locale.getDefault(), "%.1f %s", currentDisplay, displayUnit)}",
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
-                    text = "Target ${String.format(Locale.getDefault(), "%.1f", targetWeight)} kg",
+                    text = "Target ${String.format(Locale.getDefault(), "%.1f %s", targetDisplay, displayUnit)}",
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )

@@ -16,7 +16,7 @@ data class ProfileWithCount(
 class ProfileViewModel : ViewModel() {
 
     val currentProfileName: StateFlow<String> = BmiRepository.currentProfileName
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "Foysal")
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), "Guest User")
 
     @OptIn(ExperimentalCoroutinesApi::class)
     val profiles: StateFlow<List<ProfileWithCount>> = BmiRepository.allProfiles

@@ -26,13 +26,10 @@ object BmiRepository {
         database = AppDatabase.getDatabase(appContext)
         preferences = UserPreferences(appContext)
         
-        // Ensure default profiles exist in the database
+        // Ensure default Guest profile exists in the database
         scope.launch {
-            if (database.profileDao().getProfileByName("Foysal") == null) {
-                database.profileDao().insertProfile(UserProfile(name = "Foysal", isTracked = true).toEntity())
-            }
-            if (database.profileDao().getProfileByName("Guest") == null) {
-                database.profileDao().insertProfile(UserProfile(name = "Guest", isTracked = false).toEntity())
+            if (database.profileDao().getProfileByName("Guest User") == null) {
+                database.profileDao().insertProfile(UserProfile(name = "Guest User", isTracked = false).toEntity())
             }
         }
     }
@@ -93,10 +90,7 @@ object BmiRepository {
 
     fun addChatMessage(message: ChatMessage) {
         scope.launch {
-            val profile = database.profileDao().getProfileByName(message.profileName)
-            if (profile?.isTracked == true) {
-                database.bmiDao().insertChatMessage(message.toEntity())
-            }
+            database.bmiDao().insertChatMessage(message.toEntity())
         }
     }
 
@@ -129,7 +123,9 @@ object BmiRepository {
     }
 
     val currentProfileName: Flow<String> by lazy {
-        preferences.userProfile.map { it.name }.onStart { emit("Foysal") }
+        preferences.userProfile.map { 
+            if (it.name.isBlank()) "Guest User" else it.name 
+        }.onStart { emit("Guest User") }
     }
 
     val isOnboardingCompleted: Flow<Boolean> by lazy {

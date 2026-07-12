@@ -8,6 +8,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.compose.rememberNavController
 import com.happylens.ai_bmi_calculator.presentation.navigation.NavGraph
 import com.happylens.ai_bmi_calculator.presentation.navigation.Screen
@@ -19,15 +22,20 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             AI_BMI_CalculatorTheme {
+                val viewModel: MainViewModel = viewModel()
+                val isOnboardingCompleted by viewModel.isOnboardingCompleted.collectAsState()
+
                 Surface(
                     modifier = Modifier.fillMaxSize(),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    val navController = rememberNavController()
-                    NavGraph(
-                        navController = navController,
-                        startDestination = Screen.Onboarding.route
-                    )
+                    if (isOnboardingCompleted != null) {
+                        val navController = rememberNavController()
+                        NavGraph(
+                            navController = navController,
+                            startDestination = if (isOnboardingCompleted == true) Screen.Home.route else Screen.Onboarding.route
+                        )
+                    }
                 }
             }
         }

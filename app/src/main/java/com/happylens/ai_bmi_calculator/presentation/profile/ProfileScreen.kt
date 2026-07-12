@@ -9,6 +9,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
@@ -26,6 +27,8 @@ import com.happylens.ai_bmi_calculator.domain.model.UserProfile
 import com.happylens.ai_bmi_calculator.presentation.components.CommonTopBar
 import com.happylens.ai_bmi_calculator.presentation.navigation.BottomNavigationBar
 import com.happylens.ai_bmi_calculator.presentation.navigation.Screen
+import com.happylens.ai_bmi_calculator.ui.theme.SuccessGreen
+import com.happylens.ai_bmi_calculator.ui.theme.WarningAmber
 
 @Composable
 fun ProfileScreen(
@@ -44,6 +47,22 @@ fun ProfileScreen(
                 title = "Profiles",
                 onBackClick = onBackClick,
                 rightContent = {
+                    IconButton(
+                        onClick = { showCreateSection = true },
+                        modifier = Modifier
+                            .size(40.dp)
+                            .background(MaterialTheme.colorScheme.surface, CircleShape)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Add,
+                            contentDescription = "Add Profile",
+                            tint = MaterialTheme.colorScheme.primary,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                    
+                    Spacer(modifier = Modifier.width(12.dp))
+                    
                     IconButton(
                         onClick = onSettingsClick,
                         modifier = Modifier
@@ -142,10 +161,10 @@ fun ProfileItem(
 ) {
     val profile = profileWithCount.profile
     val color = when (profile.name) {
-        "Foysal" -> MaterialTheme.colorScheme.primary
+        "Guest User" -> Color.Gray
         "Family" -> Color(0xFF4CAF50)
         "Alex" -> Color(0xFF8B5CF6)
-        else -> Color(0xFFF59E0B)
+        else -> MaterialTheme.colorScheme.primary
     }
 
     Card(
@@ -193,7 +212,7 @@ fun ProfileItem(
                 Text(
                     text = if (profile.isTracked) "Tracked" else "Quick check",
                     fontSize = 14.sp,
-                    color = if (profile.isTracked) Color(0xFF10B981) else Color(0xFFF59E0B),
+                    color = if (profile.isTracked) SuccessGreen else WarningAmber,
                     fontWeight = FontWeight.Medium
                 )
             }
@@ -207,8 +226,8 @@ fun ProfileItem(
                     )
                 }
                 
-                // Don't allow deleting the primary profile "Foysal"
-                if (profile.name != "Foysal") {
+                // Don't allow deleting the primary profile "Guest User"
+                if (profile.name != "Guest User") {
                     Spacer(modifier = Modifier.height(4.dp))
                     IconButton(
                         onClick = { onDelete(profile) },
@@ -273,13 +292,14 @@ fun CreateProfileCard(
                         .weight(1f)
                         .fillMaxHeight()
                         .clip(RoundedCornerShape(12.dp))
-                        .background(if (isTracked) Color.White else Color.Transparent)
+                        .background(if (isTracked) MaterialTheme.colorScheme.surface else Color.Transparent)
                         .clickable { isTracked = true }
                         .padding(horizontal = 4.dp, vertical = 4.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = "Tracked",
+                        color = if (isTracked) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = if (isTracked) FontWeight.Bold else FontWeight.Normal,
                         fontSize = 14.sp
                     )
@@ -289,13 +309,14 @@ fun CreateProfileCard(
                         .weight(1f)
                         .fillMaxHeight()
                         .clip(RoundedCornerShape(12.dp))
-                        .background(if (!isTracked) Color.White else Color.Transparent)
+                        .background(if (!isTracked) MaterialTheme.colorScheme.surface else Color.Transparent)
                         .clickable { isTracked = false }
                         .padding(horizontal = 4.dp, vertical = 4.dp),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(
                         text = "Quick check",
+                        color = if (!isTracked) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
                         fontWeight = if (!isTracked) FontWeight.Bold else FontWeight.Normal,
                         fontSize = 14.sp
                     )
@@ -335,10 +356,10 @@ fun CreateProfileCard(
                         .weight(1f)
                         .height(48.dp),
                     shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = Color.Blue),
+                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                     enabled = name.isNotBlank()
                 ) {
-                    Text("Create", color = Color.White)
+                    Text("Create", color = MaterialTheme.colorScheme.onPrimary)
                 }
             }
         }

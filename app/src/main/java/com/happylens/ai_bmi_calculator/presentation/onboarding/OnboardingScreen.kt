@@ -163,7 +163,10 @@ fun OnboardingScreen(
             }
 
             TextButton(
-                onClick = onFinish,
+                onClick = {
+                    viewModel.skipOnboarding()
+                    onFinish()
+                },
                 modifier = Modifier.padding(top = 8.dp)
             ) {
                 Text(text = "Skip", color = Color.White.copy(alpha = 0.7f))
@@ -340,7 +343,7 @@ fun ProfilePage(
                 OutlinedTextField(
                     value = name,
                     onValueChange = onNameChange,
-                    placeholder = { Text("e.g. Foysal") },
+                    placeholder = { Text("e.g. John Doe") },
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(top = 8.dp),

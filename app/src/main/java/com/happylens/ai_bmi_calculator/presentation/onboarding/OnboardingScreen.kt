@@ -1,5 +1,6 @@
 package com.happylens.ai_bmi_calculator.presentation.onboarding
 
+import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -19,9 +20,14 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.composed
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.BlendMode
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -40,10 +46,46 @@ fun OnboardingScreen(
     val pagerState = rememberPagerState(pageCount = { 3 })
     val scope = rememberCoroutineScope()
 
+    // AI-vibe animated background
+    val infiniteTransition = rememberInfiniteTransition(label = "onboarding_bg")
+    val angle by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 360f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(20000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "angle"
+    )
+
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color(0xFF0000FF))
+            .drawWithContent {
+                val radian = Math.toRadians(angle.toDouble())
+                val x = Math.cos(radian).toFloat()
+                val y = Math.sin(radian).toFloat()
+                
+                // Expanding the gradient reach to ensure smooth coverage during rotation
+                val sizeMax = maxOf(size.width, size.height) * 1.5f
+                val start = Offset(size.width / 2 + x * sizeMax, size.height / 2 + y * sizeMax)
+                val end = Offset(size.width / 2 - x * sizeMax, size.height / 2 - y * sizeMax)
+
+                drawRect(
+                    brush = Brush.linearGradient(
+                        colors = listOf(
+                            Color(0xFF4F46E5), // Indigo
+                            Color(0xFF7C3AED), // Violet
+                            Color(0xFF3B82F6), // Blue
+                            Color(0xFF4F46E5), // Loop back
+                        ),
+                        start = start,
+                        end = end
+                    )
+                )
+                drawContent()
+            }
+            .sparkle(particleCount = 40)
     ) {
         Column(
             modifier = Modifier
@@ -141,7 +183,8 @@ fun WelcomePage() {
             modifier = Modifier
                 .size(120.dp)
                 .clip(RoundedCornerShape(32.dp))
-                .background(Color(0xFFA5B4FC))
+                .aiFlow()
+                .sparkle(color = Color.White, particleCount = 15)
                 .padding(16.dp),
             contentAlignment = Alignment.Center
         ) {
@@ -213,7 +256,8 @@ fun FeaturesPage() {
             icon = Icons.Default.AutoAwesome,
             iconColor = Color(0xFF8B5CF6),
             title = "AI health insights",
-            description = "Trend analysis, smart suggestions and a personal AI assistant."
+            description = "Trend analysis, smart suggestions and a personal AI assistant.",
+            showSparkle = true
         )
 
         Spacer(modifier = Modifier.height(16.dp))
@@ -228,7 +272,7 @@ fun FeaturesPage() {
 }
 
 @Composable
-fun FeatureItem(icon: ImageVector, iconColor: Color, title: String, description: String) {
+fun FeatureItem(icon: ImageVector, iconColor: Color, title: String, description: String, showSparkle: Boolean = false) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
@@ -243,7 +287,8 @@ fun FeatureItem(icon: ImageVector, iconColor: Color, title: String, description:
                 modifier = Modifier
                     .size(48.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(iconColor.copy(alpha = 0.1f)),
+                    .background(iconColor.copy(alpha = 0.1f))
+                    .then(if (showSparkle) Modifier.aiFlow(colors = listOf(iconColor, Color.White, iconColor), durationMillis = 2000).sparkle(color = iconColor.copy(alpha = 0.8f), particleCount = 12) else Modifier),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(imageVector = icon, contentDescription = null, tint = iconColor)
@@ -407,5 +452,90 @@ fun GenderButton(text: String, isSelected: Boolean, onClick: () -> Unit, modifie
             fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
             fontSize = 14.sp
         )
+    }
+}
+
+/**
+ * Adds a live "sparkle" effect with shimmering and moving particles.
+ */
+@Composable
+fun Modifier.sparkle(
+    color: Color = Color.White,
+    particleCount: Int = 25
+): Modifier = composed {
+    val infiniteTransition = rememberInfiniteTransition(label = "sparkle")
+    
+    val progress by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(4000, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "progress"
+    )
+
+    this.drawWithContent {
+        drawContent()
+        
+        val random = java.util.Random(42)
+        repeat(particleCount) {
+            val seedX = random.nextFloat()
+            val seedY = random.nextFloat()
+            val speed = 0.1f + random.nextFloat() * 0.4f
+            
+            // Move particles slightly over time
+            val x = ((seedX + progress * speed) % 1f) * size.width
+            val y = ((seedY + (1f - progress) * speed * 0.5f) % 1f) * size.height
+            
+            val radius = random.nextFloat() * 2.dp.toPx()
+            
+            val particleSeed = random.nextFloat()
+            val alphaProgress = (progress + particleSeed) % 1f
+            val alpha = if (alphaProgress < 0.5f) alphaProgress * 2f else (1f - alphaProgress) * 2f
+            
+            drawCircle(
+                color = color,
+                radius = radius,
+                center = Offset(x, y),
+                alpha = alpha * 0.6f
+            )
+        }
+    }
+}
+
+/**
+ * Creates a flowing color effect (AI vibe) that moves across the element.
+ */
+@Composable
+fun Modifier.aiFlow(
+    colors: List<Color> = listOf(Color(0xFF4F46E5), Color(0xFF7C3AED), Color(0xFF3B82F6), Color(0xFF4F46E5)),
+    durationMillis: Int = 4000
+): Modifier = composed {
+    val infiniteTransition = rememberInfiniteTransition(label = "aiFlow")
+    val flowProgress by infiniteTransition.animateFloat(
+        initialValue = 0f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(durationMillis, easing = LinearEasing),
+            repeatMode = RepeatMode.Restart
+        ),
+        label = "flowProgress"
+    )
+
+    this.drawWithContent {
+        // Draw the moving gradient as a background/overlay
+        val gradientSize = size.width + size.height
+        val offset = flowProgress * gradientSize
+        
+        drawRect(
+            brush = Brush.linearGradient(
+                colors = colors,
+                start = Offset(offset - gradientSize, offset - gradientSize),
+                end = Offset(offset, offset),
+                tileMode = TileMode.Repeated
+            )
+        )
+        drawContent()
     }
 }

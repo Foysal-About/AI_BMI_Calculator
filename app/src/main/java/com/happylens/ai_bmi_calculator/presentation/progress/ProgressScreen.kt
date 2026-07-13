@@ -34,10 +34,15 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.StrokeJoin
 import com.happylens.ai_bmi_calculator.domain.model.BmiRecord
 import com.happylens.ai_bmi_calculator.domain.model.UserProfile
+import com.happylens.ai_bmi_calculator.ui.glass.GlassCard
+import com.happylens.ai_bmi_calculator.ui.glass.GlassSegmentedControl
+import com.happylens.ai_bmi_calculator.ui.glass.LiquidBackdrop
+import com.happylens.ai_bmi_calculator.ui.glass.rememberGlassState
 import com.happylens.ai_bmi_calculator.ui.theme.ErrorRed
 import com.happylens.ai_bmi_calculator.ui.theme.InfoBlue
 import com.happylens.ai_bmi_calculator.ui.theme.SuccessGreen
 import com.happylens.ai_bmi_calculator.ui.theme.WarningAmber
+import dev.chrisbanes.haze.HazeState
 import java.util.Locale
 
 @Composable
@@ -47,10 +52,13 @@ fun ProgressScreen(
 ) {
     val bmiRecords by viewModel.bmiRecords.collectAsState()
     val userProfile by viewModel.userProfile.collectAsState()
+    val hazeState = rememberGlassState()
 
+    LiquidBackdrop(hazeState = hazeState) {
     Scaffold(
         topBar = {
             CommonTopBar(
+                hazeState = hazeState,
                 title = "Progress",
                 rightContent = {
                     Text(
@@ -66,19 +74,11 @@ fun ProgressScreen(
         bottomBar = {
             BottomNavigationBar(
                 currentRoute = Screen.Progress.route,
-                onNavigate = onNavigate
+                onNavigate = onNavigate,
+                hazeState = hazeState
             )
         },
-        containerColor = Color.Transparent,
-        modifier = Modifier.background(
-            brush = Brush.verticalGradient(
-                colors = listOf(
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
-                    MaterialTheme.colorScheme.background,
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.02f)
-                )
-            )
-        )
+        containerColor = Color.Transparent
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -89,21 +89,23 @@ fun ProgressScreen(
         ) {
                 Spacer(modifier = Modifier.height(8.dp))
 
-                WeightGoalCard(userProfile, bmiRecords.firstOrNull())
+                WeightGoalCard(userProfile, bmiRecords.firstOrNull(), hazeState)
 
                 Spacer(modifier = Modifier.height(24.dp))
 
-                TrendCard(bmiRecords)
+                TrendCard(bmiRecords, hazeState)
 
                 Spacer(modifier = Modifier.height(paddingValues.calculateBottomPadding() + 24.dp))
             }
+    }
     }
 }
 
 @Composable
 fun WeightGoalCard(
     userProfile: UserProfile?,
-    latestRecord: BmiRecord?
+    latestRecord: BmiRecord?,
+    hazeState: HazeState
 ) {
     if (latestRecord == null) return
 
@@ -143,13 +145,12 @@ fun WeightGoalCard(
     val idealMinDisplay = if (displayUnit == "lb") idealMinKg * 2.20462f else idealMinKg
     val idealMaxDisplay = if (displayUnit == "lb") idealMaxKg * 2.20462f else idealMaxKg
 
-    Card(
+    GlassCard(
+        hazeState = hazeState,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        contentPadding = PaddingValues(24.dp)
     ) {
-        Column(modifier = Modifier.padding(24.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -248,21 +249,18 @@ fun WeightGoalCard(
                     fontWeight = FontWeight.Medium
                 )
             }
-        }
     }
 }
 
 @Composable
-fun TrendCard(bmiRecords: List<BmiRecord>) {
+fun TrendCard(bmiRecords: List<BmiRecord>, hazeState: HazeState) {
     var selectedType by remember { mutableStateOf("Weight") }
 
-    Card(
+    GlassCard(
+        hazeState = hazeState,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        shape = RoundedCornerShape(24.dp)
     ) {
-        Column(modifier = Modifier.padding(24.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -275,15 +273,12 @@ fun TrendCard(bmiRecords: List<BmiRecord>) {
                     color = MaterialTheme.colorScheme.onSurface
                 )
 
-                Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                        .padding(4.dp)
-                ) {
-                    TrendTypeOption("Weight", selectedType == "Weight") { selectedType = "Weight" }
-                    TrendTypeOption("BMI", selectedType == "BMI") { selectedType = "BMI" }
-                }
+                GlassSegmentedControl(
+                    options = listOf("Weight", "BMI"),
+                    selectedIndex = if (selectedType == "Weight") 0 else 1,
+                    onSelect = { index -> selectedType = if (index == 0) "Weight" else "BMI" },
+                    modifier = Modifier.width(140.dp)
+                )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -374,25 +369,6 @@ fun TrendCard(bmiRecords: List<BmiRecord>) {
                     }
                 }
             }
-        }
-    }
-}
-
-@Composable
-fun TrendTypeOption(label: String, isSelected: Boolean, onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(if (isSelected) MaterialTheme.colorScheme.surface else Color.Transparent)
-            .clickable { onClick() }
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-    ) {
-        Text(
-            text = label,
-            fontSize = 12.sp,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-        )
     }
 }
 
@@ -401,8 +377,8 @@ fun TrendStatCard(label: String, value: String, valueColor: Color, modifier: Mod
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
-        color = valueColor.copy(alpha = 0.05f),
-        border = BorderStroke(1.dp, valueColor.copy(alpha = 0.1f))
+        color = valueColor.copy(alpha = 0.12f),
+        border = BorderStroke(1.dp, valueColor.copy(alpha = 0.24f))
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),

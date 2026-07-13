@@ -2,7 +2,6 @@ package com.happylens.ai_bmi_calculator.presentation.profile
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -17,7 +16,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -27,8 +25,15 @@ import com.happylens.ai_bmi_calculator.domain.model.UserProfile
 import com.happylens.ai_bmi_calculator.presentation.components.CommonTopBar
 import com.happylens.ai_bmi_calculator.presentation.navigation.BottomNavigationBar
 import com.happylens.ai_bmi_calculator.presentation.navigation.Screen
+import com.happylens.ai_bmi_calculator.ui.glass.GlassButton
+import com.happylens.ai_bmi_calculator.ui.glass.GlassCard
+import com.happylens.ai_bmi_calculator.ui.glass.GlassIconButton
+import com.happylens.ai_bmi_calculator.ui.glass.GlassSegmentedControl
+import com.happylens.ai_bmi_calculator.ui.glass.LiquidBackdrop
+import com.happylens.ai_bmi_calculator.ui.glass.rememberGlassState
 import com.happylens.ai_bmi_calculator.ui.theme.SuccessGreen
 import com.happylens.ai_bmi_calculator.ui.theme.WarningAmber
+import dev.chrisbanes.haze.HazeState
 
 @Composable
 fun ProfileScreen(
@@ -40,18 +45,20 @@ fun ProfileScreen(
     val profiles by viewModel.profiles.collectAsState()
     val currentProfileName by viewModel.currentProfileName.collectAsState()
     var showCreateSection by remember { mutableStateOf(false) }
+    val hazeState = rememberGlassState()
 
+    LiquidBackdrop(hazeState = hazeState) {
     Scaffold(
         topBar = {
             CommonTopBar(
+                hazeState = hazeState,
                 title = "Profiles",
                 onBackClick = onBackClick,
                 rightContent = {
-                    IconButton(
+                    GlassIconButton(
                         onClick = { showCreateSection = true },
-                        modifier = Modifier
-                            .size(40.dp)
-                            .background(MaterialTheme.colorScheme.surface, CircleShape)
+                        hazeState = hazeState,
+                        size = 40.dp
                     ) {
                         Icon(
                             imageVector = Icons.Default.Add,
@@ -60,14 +67,13 @@ fun ProfileScreen(
                             modifier = Modifier.size(24.dp)
                         )
                     }
-                    
+
                     Spacer(modifier = Modifier.width(12.dp))
-                    
-                    IconButton(
+
+                    GlassIconButton(
                         onClick = onSettingsClick,
-                        modifier = Modifier
-                            .size(40.dp)
-                            .background(MaterialTheme.colorScheme.surface, CircleShape)
+                        hazeState = hazeState,
+                        size = 40.dp
                     ) {
                         Icon(
                             imageVector = Icons.Default.Settings,
@@ -82,19 +88,11 @@ fun ProfileScreen(
         bottomBar = {
             BottomNavigationBar(
                 currentRoute = Screen.Profile.route,
-                onNavigate = onNavigate
+                onNavigate = onNavigate,
+                hazeState = hazeState
             )
         },
-        containerColor = Color.Transparent,
-        modifier = Modifier.background(
-            brush = Brush.verticalGradient(
-                colors = listOf(
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
-                    MaterialTheme.colorScheme.background,
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.02f)
-                )
-            )
-        )
+        containerColor = Color.Transparent
     ) { padding ->
         LazyColumn(
             modifier = Modifier
@@ -117,6 +115,7 @@ fun ProfileScreen(
                 ProfileItem(
                     profileWithCount = profileWithCount,
                     isSelected = isSelected,
+                    hazeState = hazeState,
                     onSelect = { viewModel.selectProfile(it.name) },
                     onDelete = { viewModel.deleteProfile(it) }
                 )
@@ -125,21 +124,18 @@ fun ProfileScreen(
             if (!showCreateSection) {
                 item {
                     Spacer(modifier = Modifier.height(8.dp))
-                    Button(
+                    GlassButton(
                         onClick = { showCreateSection = true },
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            contentColor = MaterialTheme.colorScheme.primary
-                        )
+                        shape = RoundedCornerShape(16.dp)
                     ) {
-                        Text("Add new profile")
+                        Text("Add new profile", color = Color.White, fontWeight = FontWeight.Bold)
                     }
                 }
             } else {
                 item {
                     CreateProfileCard(
+                        hazeState = hazeState,
                         onCancel = { showCreateSection = false },
                         onCreate = { name, isTracked ->
                             viewModel.createProfile(name, isTracked)
@@ -150,12 +146,14 @@ fun ProfileScreen(
             }
         }
     }
+    }
 }
 
 @Composable
 fun ProfileItem(
     profileWithCount: ProfileWithCount,
     isSelected: Boolean,
+    hazeState: HazeState,
     onSelect: (UserProfile) -> Unit,
     onDelete: (UserProfile) -> Unit
 ) {
@@ -167,22 +165,20 @@ fun ProfileItem(
         else -> MaterialTheme.colorScheme.primary
     }
 
-    Card(
+    GlassCard(
+        hazeState = hazeState,
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onSelect(profile) }
             .then(
                 if (isSelected) Modifier.border(2.dp, MaterialTheme.colorScheme.primary, RoundedCornerShape(24.dp))
                 else Modifier
             ),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        onClick = { onSelect(profile) },
+        contentPadding = PaddingValues(16.dp)
     ) {
         Row(
-            modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
+            modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
@@ -225,15 +221,14 @@ fun ProfileItem(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
-                
+
                 // Don't allow deleting the primary profile "Guest User"
                 if (profile.name != "Guest User") {
                     Spacer(modifier = Modifier.height(4.dp))
-                    IconButton(
+                    GlassIconButton(
                         onClick = { onDelete(profile) },
-                        modifier = Modifier
-                            .size(24.dp)
-                            .background(MaterialTheme.colorScheme.error.copy(alpha = 0.1f), CircleShape)
+                        hazeState = hazeState,
+                        size = 24.dp
                     ) {
                         Icon(
                             imageVector = Icons.Default.Close,
@@ -250,117 +245,81 @@ fun ProfileItem(
 
 @Composable
 fun CreateProfileCard(
+    hazeState: HazeState,
     onCancel: () -> Unit,
     onCreate: (String, Boolean) -> Unit
 ) {
     var name by remember { mutableStateOf("") }
     var isTracked by remember { mutableStateOf(true) }
 
-    Card(
+    GlassCard(
+        hazeState = hazeState,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        contentPadding = PaddingValues(24.dp)
     ) {
-        Column(modifier = Modifier.padding(24.dp)) {
-            OutlinedTextField(
-                value = name,
-                onValueChange = { name = it },
-                placeholder = { Text("Profile name") },
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(12.dp),
-                colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                    unfocusedBorderColor = Color.Transparent,
-                    focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.5f)
-                ),
-                singleLine = true
-            )
+        OutlinedTextField(
+            value = name,
+            onValueChange = { name = it },
+            placeholder = { Text("Profile name") },
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = OutlinedTextFieldDefaults.colors(
+                unfocusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.25f),
+                focusedContainerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.35f),
+                unfocusedBorderColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.24f),
+                focusedBorderColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f)
+            ),
+            singleLine = true
+        )
 
-            Spacer(modifier = Modifier.height(16.dp))
+        Spacer(modifier = Modifier.height(16.dp))
 
-            Row(
+        GlassSegmentedControl(
+            options = listOf("Tracked", "Quick check"),
+            selectedIndex = if (isTracked) 0 else 1,
+            onSelect = { index -> isTracked = index == 0 },
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(48.dp)
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+        Text(
+            text = if (isTracked) "Saves every calculation with history, goals and graphs."
+                   else "Ideal for one-off checks. Nothing is saved.",
+            fontSize = 12.sp,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+
+        Spacer(modifier = Modifier.height(24.dp))
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            TextButton(
+                onClick = onCancel,
                 modifier = Modifier
-                    .fillMaxWidth()
-                    .height(48.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f))
+                    .weight(1f)
+                    .height(48.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = ButtonDefaults.textButtonColors(
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.25f),
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             ) {
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(if (isTracked) MaterialTheme.colorScheme.surface else Color.Transparent)
-                        .clickable { isTracked = true }
-                        .padding(horizontal = 4.dp, vertical = 4.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Tracked",
-                        color = if (isTracked) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = if (isTracked) FontWeight.Bold else FontWeight.Normal,
-                        fontSize = 14.sp
-                    )
-                }
-                Box(
-                    modifier = Modifier
-                        .weight(1f)
-                        .fillMaxHeight()
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(if (!isTracked) MaterialTheme.colorScheme.surface else Color.Transparent)
-                        .clickable { isTracked = false }
-                        .padding(horizontal = 4.dp, vertical = 4.dp),
-                    contentAlignment = Alignment.Center
-                ) {
-                    Text(
-                        text = "Quick check",
-                        color = if (!isTracked) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
-                        fontWeight = if (!isTracked) FontWeight.Bold else FontWeight.Normal,
-                        fontSize = 14.sp
-                    )
-                }
+                Text("Cancel")
             }
-
-            Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = if (isTracked) "Saves every calculation with history, goals and graphs." 
-                       else "Ideal for one-off checks. Nothing is saved.",
-                fontSize = 12.sp,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            GlassButton(
+                onClick = { if (name.isNotBlank()) onCreate(name, isTracked) },
+                modifier = Modifier
+                    .weight(1f)
+                    .height(48.dp),
+                shape = RoundedCornerShape(12.dp),
+                enabled = name.isNotBlank()
             ) {
-                Button(
-                    onClick = onCancel,
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(48.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
-                        contentColor = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                ) {
-                    Text("Cancel")
-                }
-                Button(
-                    onClick = { if (name.isNotBlank()) onCreate(name, isTracked) },
-                    modifier = Modifier
-                        .weight(1f)
-                        .height(48.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
-                    enabled = name.isNotBlank()
-                ) {
-                    Text("Create", color = MaterialTheme.colorScheme.onPrimary)
-                }
+                Text("Create", color = Color.White, fontWeight = FontWeight.Bold)
             }
         }
     }

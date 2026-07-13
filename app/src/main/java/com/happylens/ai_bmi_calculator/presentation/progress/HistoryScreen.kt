@@ -4,7 +4,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -14,7 +13,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -24,7 +22,15 @@ import com.happylens.ai_bmi_calculator.domain.model.BmiRecord
 import com.happylens.ai_bmi_calculator.presentation.components.CommonTopBar
 import com.happylens.ai_bmi_calculator.presentation.navigation.BottomNavigationBar
 import com.happylens.ai_bmi_calculator.presentation.navigation.Screen
+import com.happylens.ai_bmi_calculator.ui.glass.GlassCard
+import com.happylens.ai_bmi_calculator.ui.glass.GlassIconButton
+import com.happylens.ai_bmi_calculator.ui.glass.LiquidBackdrop
+import com.happylens.ai_bmi_calculator.ui.glass.rememberGlassState
 import com.happylens.ai_bmi_calculator.ui.theme.AI_BMI_CalculatorTheme
+import com.happylens.ai_bmi_calculator.ui.theme.ErrorRed
+import com.happylens.ai_bmi_calculator.ui.theme.SuccessGreen
+import com.happylens.ai_bmi_calculator.ui.theme.WarningAmber
+import dev.chrisbanes.haze.HazeState
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -40,10 +46,13 @@ fun HistoryScreen(
     viewModel: ProgressViewModel = viewModel()
 ) {
     val bmiRecords by viewModel.bmiRecords.collectAsState()
+    val hazeState = rememberGlassState()
 
+    LiquidBackdrop(hazeState = hazeState) {
     Scaffold(
         topBar = {
             CommonTopBar(
+                hazeState = hazeState,
                 title = "History",
                 onBackClick = onBackClick,
                 rightContent = {
@@ -58,19 +67,11 @@ fun HistoryScreen(
         bottomBar = {
             BottomNavigationBar(
                 currentRoute = Screen.Progress.route,
-                onNavigate = onNavigate
+                onNavigate = onNavigate,
+                hazeState = hazeState
             )
         },
-        containerColor = Color.Transparent,
-        modifier = Modifier.background(
-            brush = Brush.verticalGradient(
-                colors = listOf(
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
-                    MaterialTheme.colorScheme.background,
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.02f)
-                )
-            )
-        )
+        containerColor = Color.Transparent
     ) { paddingValues ->
         LazyColumn(
             modifier = Modifier
@@ -91,27 +92,30 @@ fun HistoryScreen(
                     HistoryItem(
                         record = record,
                         weightChange = weightChange,
-                        onDelete = { viewModel.deleteRecord(record.id) }
+                        onDelete = { viewModel.deleteRecord(record.id) },
+                        hazeState = hazeState
                     )
                 }
             }
     }
+    }
 }
 
 @Composable
-fun HistoryItem(record: BmiRecord, weightChange: String, onDelete: () -> Unit) {
+fun HistoryItem(record: BmiRecord, weightChange: String, onDelete: () -> Unit, hazeState: HazeState) {
     val statusColor = when {
         record.bmi < 18.5f -> MaterialTheme.colorScheme.primary
-        record.bmi < 25f -> Color(0xFF10B981)
-        record.bmi < 30f -> Color(0xFFF59E0B)
-        else -> Color(0xFFEF4444)
+        record.bmi < 25f -> SuccessGreen
+        record.bmi < 30f -> WarningAmber
+        else -> ErrorRed
     }
     val statusBgColor = statusColor.copy(alpha = 0.1f)
 
-    Card(
+    GlassCard(
+        hazeState = hazeState,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        contentPadding = PaddingValues(0.dp)
     ) {
         Row(
             modifier = Modifier
@@ -171,7 +175,7 @@ fun HistoryItem(record: BmiRecord, weightChange: String, onDelete: () -> Unit) {
                 Text(
                     text = weightChange,
                     fontSize = 14.sp,
-                    color = if (weightChange.startsWith("-")) Color(0xFF10B981) else if (weightChange.startsWith("+")) Color(0xFFEF4444) else MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = if (weightChange.startsWith("-")) SuccessGreen else if (weightChange.startsWith("+")) ErrorRed else MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Medium
                 )
             }
@@ -179,11 +183,10 @@ fun HistoryItem(record: BmiRecord, weightChange: String, onDelete: () -> Unit) {
             Spacer(modifier = Modifier.width(12.dp))
 
             // Delete Button
-            IconButton(
+            GlassIconButton(
                 onClick = onDelete,
-                modifier = Modifier
-                    .size(24.dp)
-                    .background(MaterialTheme.colorScheme.error.copy(alpha = 0.1f), CircleShape)
+                hazeState = hazeState,
+                size = 24.dp
             ) {
                 Icon(
                     imageVector = Icons.Default.Close,

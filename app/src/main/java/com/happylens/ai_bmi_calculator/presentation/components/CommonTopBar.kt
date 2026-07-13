@@ -1,21 +1,21 @@
 package com.happylens.ai_bmi_calculator.presentation.components
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.happylens.ai_bmi_calculator.ui.glass.GlassIconButton
+import dev.chrisbanes.haze.HazeState
 
 @Composable
 fun CommonTopBar(
+    hazeState: HazeState,
     modifier: Modifier = Modifier,
     title: String? = null,
     titleContent: @Composable (() -> Unit)? = null,
@@ -35,11 +35,10 @@ fun CommonTopBar(
             modifier = Modifier.weight(1f)
         ) {
             if (onBackClick != null) {
-                IconButton(
+                GlassIconButton(
                     onClick = onBackClick,
-                    modifier = Modifier
-                        .size(40.dp)
-                        .background(MaterialTheme.colorScheme.surface, CircleShape)
+                    hazeState = hazeState,
+                    size = 40.dp
                 ) {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.ArrowBack,

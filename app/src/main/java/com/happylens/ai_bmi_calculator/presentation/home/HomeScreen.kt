@@ -15,7 +15,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeCap
@@ -32,6 +31,13 @@ import com.happylens.ai_bmi_calculator.presentation.components.CommonTopBar
 
 import com.happylens.ai_bmi_calculator.presentation.navigation.BottomNavigationBar
 import com.happylens.ai_bmi_calculator.presentation.navigation.Screen
+import com.happylens.ai_bmi_calculator.ui.glass.GlassButton
+import com.happylens.ai_bmi_calculator.ui.glass.GlassCard
+import com.happylens.ai_bmi_calculator.ui.glass.GlassIconButton
+import com.happylens.ai_bmi_calculator.ui.glass.GlassSegmentedControl
+import com.happylens.ai_bmi_calculator.ui.glass.LiquidBackdrop
+import com.happylens.ai_bmi_calculator.ui.glass.liquidGlass
+import com.happylens.ai_bmi_calculator.ui.glass.rememberGlassState
 import com.happylens.ai_bmi_calculator.ui.theme.ErrorRed
 import com.happylens.ai_bmi_calculator.ui.theme.InfoBlue
 import com.happylens.ai_bmi_calculator.ui.theme.SuccessGreen
@@ -63,12 +69,15 @@ fun HomeScreen(
     val isTracked by viewModel.isTracked.collectAsState()
     val latestRecord = bmiRecords.firstOrNull()
     val greeting = remember { greetingForCurrentTime() }
+    val hazeState = rememberGlassState()
 
     var showProfileDropdown by remember { mutableStateOf(false) }
 
+    LiquidBackdrop(hazeState = hazeState) {
     Scaffold(
         topBar = {
             CommonTopBar(
+                hazeState = hazeState,
                 modifier = Modifier.padding(horizontal = 8.dp),
                 titleContent = {
                     Box {
@@ -103,7 +112,7 @@ fun HomeScreen(
                             expanded = showProfileDropdown,
                             onDismissRequest = { showProfileDropdown = false },
                             modifier = Modifier
-                                .background(MaterialTheme.colorScheme.surface, RoundedCornerShape(12.dp))
+                                .liquidGlass(hazeState, RoundedCornerShape(16.dp))
                                 .width(200.dp)
                         ) {
                             allProfiles.forEach { profile ->
@@ -127,8 +136,8 @@ fun HomeScreen(
                                                 .clip(CircleShape)
                                                 .background(
                                                     if (name == "Guest User") Color.Gray
-                                                    else if (name == "Family") Color(0xFF4CAF50)
-                                                    else if (name == "Alex") Color(0xFF8B5CF6)
+                                                    else if (name == "Family") Color(0xFF0EA5E9)
+                                                    else if (name == "Alex") Color(0xFF6366F1)
                                                     else MaterialTheme.colorScheme.primary
                                                 ),
                                             contentAlignment = Alignment.Center
@@ -158,11 +167,10 @@ fun HomeScreen(
                     }
                 },
                 rightContent = {
-                    IconButton(
+                    GlassIconButton(
                         onClick = { onNavigate(Screen.Notification.route) },
-                        modifier = Modifier
-                            .size(44.dp)
-                            .background(MaterialTheme.colorScheme.surface, CircleShape)
+                        hazeState = hazeState,
+                        size = 44.dp
                     ) {
                         BadgedBox(
                             badge = {
@@ -188,19 +196,11 @@ fun HomeScreen(
         bottomBar = {
             BottomNavigationBar(
                 currentRoute = Screen.Home.route,
-                onNavigate = onNavigate
+                onNavigate = onNavigate,
+                hazeState = hazeState
             )
         },
-        containerColor = Color.Transparent,
-        modifier = Modifier.background(
-            brush = Brush.verticalGradient(
-                colors = listOf(
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
-                    MaterialTheme.colorScheme.background,
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.02f)
-                )
-            )
-        )
+        containerColor = Color.Transparent
     ) { padding ->
         LazyColumn(
             modifier = Modifier
@@ -214,16 +214,13 @@ fun HomeScreen(
         ) {
             item {
                 if (latestRecord == null) {
-                    Card(
+                    GlassCard(
+                        hazeState = hazeState,
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(24.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                        shape = RoundedCornerShape(24.dp)
                     ) {
                         Column(
-                            modifier = Modifier
-                                .padding(24.dp)
-                                .fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth(),
                             horizontalAlignment = Alignment.CenterHorizontally
                         ) {
                             Text(
@@ -242,16 +239,13 @@ fun HomeScreen(
                         }
                     }
                 } else {
-                    Card(
+                    GlassCard(
+                        hazeState = hazeState,
                         modifier = Modifier.fillMaxWidth(),
-                        shape = RoundedCornerShape(24.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                        shape = RoundedCornerShape(24.dp)
                     ) {
                         Row(
-                            modifier = Modifier
-                                .padding(24.dp)
-                                .fillMaxWidth(),
+                            modifier = Modifier.fillMaxWidth(),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             // Simple Circle BMI display
@@ -323,7 +317,7 @@ fun HomeScreen(
                                 Text(
                                     text = "Updated ${DateFormat.getDateInstance(DateFormat.MEDIUM, Locale.getDefault()).format(latestRecord.date)}",
                                     fontSize = 12.sp,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
                                 )
                             }
                         }
@@ -332,20 +326,20 @@ fun HomeScreen(
             }
 
             item {
-                Button(
+                GlassButton(
                     onClick = onCalculateClick,
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
+                    shape = RoundedCornerShape(16.dp)
                 ) {
-                    Icon(Icons.Default.Add, contentDescription = null)
+                    Icon(Icons.Default.Add, contentDescription = null, tint = Color.White)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = "Calculate BMI",
                         fontSize = 16.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
                     )
                 }
             }
@@ -354,7 +348,7 @@ fun HomeScreen(
             if (bmiRecords.isNotEmpty() && isTracked) {
 
                 item {
-                    TrendCard(bmiRecords)
+                    TrendCard(bmiRecords, hazeState)
                 }
 
                 item {
@@ -370,13 +364,13 @@ fun HomeScreen(
                             }
                         }
 
-                        Card(
+                        GlassCard(
+                            hazeState = hazeState,
                             modifier = Modifier.fillMaxWidth(),
                             shape = RoundedCornerShape(24.dp),
-                            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-                            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+                            contentPadding = PaddingValues(16.dp)
                         ) {
-                            Column(modifier = Modifier.padding(16.dp)) {
+                            Column {
                                 bmiRecords.take(3).forEachIndexed { index, record ->
                                     Row(
                                         modifier = Modifier
@@ -432,15 +426,15 @@ fun HomeScreen(
 
             if (isTracked || bmiRecords.isNotEmpty()) {
                 item {
-                    Card(
+                    GlassCard(
+                        hazeState = hazeState,
                         modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(24.dp),
-                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
-                        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-                        onClick = { onNavigate(Screen.AI.route) }
+                        tint = MaterialTheme.colorScheme.primary,
+                        onClick = { onNavigate(Screen.AI.route) },
+                        contentPadding = PaddingValues(16.dp)
                     ) {
                         Row(
-                            modifier = Modifier.padding(16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Box(
@@ -490,7 +484,7 @@ fun HomeScreen(
                             Icon(
                                 imageVector = Icons.Default.ChevronRight,
                                 contentDescription = null,
-                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.3f)
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                             )
                         }
                     }
@@ -498,21 +492,19 @@ fun HomeScreen(
             }
         }
     }
+    }
 }
 
 
-
 @Composable
-fun TrendCard(bmiRecords: List<BmiRecord>) {
+fun TrendCard(bmiRecords: List<BmiRecord>, hazeState: dev.chrisbanes.haze.HazeState) {
     var selectedType by remember { mutableStateOf("Weight") }
 
-    Card(
+    GlassCard(
+        hazeState = hazeState,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        shape = RoundedCornerShape(24.dp)
     ) {
-        Column(modifier = Modifier.padding(24.dp)) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -525,15 +517,12 @@ fun TrendCard(bmiRecords: List<BmiRecord>) {
                     color = MaterialTheme.colorScheme.onSurface
                 )
 
-                Row(
-                    modifier = Modifier
-                        .clip(RoundedCornerShape(12.dp))
-                        .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
-                        .padding(4.dp)
-                ) {
-                    TrendTypeOption("Weight", selectedType == "Weight") { selectedType = "Weight" }
-                    TrendTypeOption("BMI", selectedType == "BMI") { selectedType = "BMI" }
-                }
+                GlassSegmentedControl(
+                    options = listOf("Weight", "BMI"),
+                    selectedIndex = if (selectedType == "Weight") 0 else 1,
+                    onSelect = { index -> selectedType = if (index == 0) "Weight" else "BMI" },
+                    modifier = Modifier.width(140.dp)
+                )
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -625,25 +614,6 @@ fun TrendCard(bmiRecords: List<BmiRecord>) {
                 }
             }
         }
-    }
-}
-
-@Composable
-fun TrendTypeOption(label: String, isSelected: Boolean, onClick: () -> Unit) {
-    Box(
-        modifier = Modifier
-            .clip(RoundedCornerShape(8.dp))
-            .background(if (isSelected) MaterialTheme.colorScheme.surface else Color.Transparent)
-            .clickable { onClick() }
-            .padding(horizontal = 12.dp, vertical = 6.dp)
-    ) {
-        Text(
-            text = label,
-            fontSize = 12.sp,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-        )
-    }
 }
 
 @Composable
@@ -651,8 +621,8 @@ fun TrendStatCard(label: String, value: String, valueColor: Color, modifier: Mod
     Surface(
         modifier = modifier,
         shape = RoundedCornerShape(16.dp),
-        color = valueColor.copy(alpha = 0.05f),
-        border = BorderStroke(1.dp, valueColor.copy(alpha = 0.1f))
+        color = valueColor.copy(alpha = 0.12f),
+        border = BorderStroke(1.dp, valueColor.copy(alpha = 0.24f))
     ) {
         Column(
             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),

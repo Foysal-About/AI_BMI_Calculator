@@ -34,9 +34,17 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import kotlinx.coroutines.delay
 import com.happylens.ai_bmi_calculator.domain.model.Gender
 import com.happylens.ai_bmi_calculator.presentation.components.CommonTopBar
+import com.happylens.ai_bmi_calculator.ui.glass.GlassCard
+import com.happylens.ai_bmi_calculator.ui.glass.GlassIconButton
+import com.happylens.ai_bmi_calculator.ui.glass.GlassLevel
+import com.happylens.ai_bmi_calculator.ui.glass.GlassSegmentedControl
+import com.happylens.ai_bmi_calculator.ui.glass.LiquidBackdrop
+import com.happylens.ai_bmi_calculator.ui.glass.liquidGlass
+import com.happylens.ai_bmi_calculator.ui.glass.rememberGlassState
 import com.happylens.ai_bmi_calculator.ui.theme.ErrorRed
 import com.happylens.ai_bmi_calculator.ui.theme.SuccessGreen
 import com.happylens.ai_bmi_calculator.ui.theme.WarningAmber
+import dev.chrisbanes.haze.HazeState
 import java.util.Locale
 import kotlin.math.*
 
@@ -104,28 +112,19 @@ fun CalculatorScreen(
 
     BackHandler(onBack = handleBack)
 
+    val hazeState = rememberGlassState()
+
+    LiquidBackdrop(hazeState = hazeState) {
     Scaffold(
         topBar = {
             CommonTopBar(
+                hazeState = hazeState,
                 title = "BMI Calculator",
                 onBackClick = handleBack
             )
         },
         containerColor = Color.Transparent
     ) { paddingValues ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(
-                    brush = Brush.verticalGradient(
-                        colors = listOf(
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.05f),
-                            MaterialTheme.colorScheme.background,
-                            MaterialTheme.colorScheme.primary.copy(alpha = 0.02f)
-                        )
-                    )
-                )
-        ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -142,60 +141,46 @@ fun CalculatorScreen(
                     .height(IntrinsicSize.Min)
             ) {
                 // Gender Selector
-                Card(
+                GlassCard(
+                    hazeState = hazeState,
                     modifier = Modifier
                         .weight(1.2f)
                         .fillMaxHeight(),
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    contentPadding = PaddingValues(8.dp)
                 ) {
-                    Box(
-                        modifier = Modifier
-                            .padding(8.dp)
-                            .fillMaxSize()
-                            .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(10.dp))
-                            .padding(4.dp)
-                    ) {
-                        Row(modifier = Modifier.fillMaxSize()) {
-                            GenderButton(
-                                text = "Male",
-                                isSelected = gender == Gender.MALE,
-                                onClick = { viewModel.updateGender(Gender.MALE) },
-                                modifier = Modifier.weight(1f)
-                            )
-                            GenderButton(
-                                text = "Female",
-                                isSelected = gender == Gender.FEMALE,
-                                onClick = { viewModel.updateGender(Gender.FEMALE) },
-                                modifier = Modifier.weight(1f)
-                            )
-                        }
-                    }
+                    GlassSegmentedControl(
+                        options = listOf("Male", "Female"),
+                        selectedIndex = if (gender == Gender.MALE) 0 else 1,
+                        onSelect = { index ->
+                            viewModel.updateGender(if (index == 0) Gender.MALE else Gender.FEMALE)
+                        },
+                        modifier = Modifier.fillMaxSize()
+                    )
                 }
 
                 Spacer(modifier = Modifier.width(16.dp))
 
                 // Age Selector
-                Card(
+                GlassCard(
+                    hazeState = hazeState,
                     modifier = Modifier
                         .weight(1f)
                         .fillMaxHeight(),
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                    contentPadding = PaddingValues(8.dp)
                 ) {
                     Row(
                         modifier = Modifier
-                            .padding(8.dp)
                             .fillMaxWidth()
                             .fillMaxHeight(),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        IconButton(
+                        GlassIconButton(
                             onClick = { if (age > 1) viewModel.updateAge(age - 1) },
-                            modifier = Modifier
-                                .size(32.dp)
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CircleShape)
+                            hazeState = hazeState,
+                            size = 32.dp
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Remove,
@@ -221,11 +206,10 @@ fun CalculatorScreen(
                                 color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
-                        IconButton(
+                        GlassIconButton(
                             onClick = { viewModel.updateAge(age + 1) },
-                            modifier = Modifier
-                                .size(32.dp)
-                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CircleShape)
+                            hazeState = hazeState,
+                            size = 32.dp
                         ) {
                             Icon(
                                 imageVector = Icons.Default.Add,
@@ -242,6 +226,7 @@ fun CalculatorScreen(
 
             // Height Card
             MeasurementCard(
+                hazeState = hazeState,
                 label = "Height",
                 value = height,
                 onValueChange = { viewModel.updateHeight(it) },
@@ -278,6 +263,7 @@ fun CalculatorScreen(
 
             // Weight Card
             MeasurementCard(
+                hazeState = hazeState,
                 label = "Weight",
                 value = weight,
                 onValueChange = { viewModel.updateWeight(it) },
@@ -319,20 +305,22 @@ fun CalculatorScreen(
             Spacer(modifier = Modifier.height(8.dp))
 
             // BMI Result Card
-            Card(
+            GlassCard(
+                hazeState = hazeState,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                level = GlassLevel.Regular,
+                contentPadding = PaddingValues(24.dp)
             ) {
                 Column(
-                    modifier = Modifier.padding(24.dp),
+                    modifier = Modifier.fillMaxWidth(),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     BMIGauge(
                         bmi = bmi,
                         modifier = Modifier.fillMaxWidth()
                     )
-                    
+
                     Text(
                         text = String.format(Locale.getDefault(), "%.1f", bmi),
                         fontSize = 48.sp,
@@ -345,9 +333,9 @@ fun CalculatorScreen(
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
-                    
+
                     Spacer(modifier = Modifier.height(16.dp))
-                    
+
                     Surface(
                         color = categoryColor.copy(alpha = 0.1f),
                         shape = RoundedCornerShape(16.dp)
@@ -359,9 +347,9 @@ fun CalculatorScreen(
                             fontWeight = FontWeight.Bold
                         )
                     }
-                    
+
                     Spacer(modifier = Modifier.height(8.dp))
-                    
+
                     Text(
                         text = if (bmi in 18.5f..24.9f) "Within the healthy range ✓" else "Outside the healthy range",
                         fontSize = 14.sp,
@@ -373,12 +361,12 @@ fun CalculatorScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Ideal weight & Goal Card
-            Card(
+            GlassCard(
+                hazeState = hazeState,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                contentPadding = PaddingValues(16.dp)
             ) {
-                Column(modifier = Modifier.padding(16.dp)) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.SpaceBetween,
@@ -435,18 +423,17 @@ fun CalculatorScreen(
                             modifier = Modifier.size(24.dp)
                         )
                     }
-                }
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             // BMI Categories
-            Card(
+            GlassCard(
+                hazeState = hazeState,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+                contentPadding = PaddingValues(24.dp)
             ) {
-                Column(modifier = Modifier.padding(24.dp)) {
                     Text(text = "BMI Categories", fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
                     Spacer(modifier = Modifier.height(16.dp))
                     BMICategoryItem("Very severely underweight", "≤ 15.9", MaterialTheme.colorScheme.primary, bmi <= 15.9f)
@@ -455,20 +442,22 @@ fun CalculatorScreen(
                     BMICategoryItem("Normal", "18.5 – 24.9", SuccessGreen, bmi in 18.5f..24.9f)
                     BMICategoryItem("Overweight", "25.0 – 29.9", WarningAmber, bmi in 25.0f..29.9f)
                     BMICategoryItem("Obese Class I", "30.0 – 34.9", ErrorRed, bmi in 30.0f..34.9f)
-                    BMICategoryItem("Obese Class II", "35.0 – 39.9", Color(0xFFB91C1C), bmi in 35.0f..39.9f)
-                    BMICategoryItem("Obese Class III", "≥ 40.0", Color(0xFF7F1D1D), bmi >= 40.0f)
-                }
+                    BMICategoryItem("Obese Class II", "35.0 – 39.9", Color(0xFF1E3A8A), bmi in 35.0f..39.9f)
+                    BMICategoryItem("Obese Class III", "≥ 40.0", Color(0xFF172554), bmi >= 40.0f)
             }
 
             Spacer(modifier = Modifier.height(16.dp))
 
             // AI Recommendation
-            Card(
+            GlassCard(
+                hazeState = hazeState,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                tint = MaterialTheme.colorScheme.primary,
+                level = GlassLevel.UltraThin,
+                contentPadding = PaddingValues(16.dp)
             ) {
-                Row(modifier = Modifier.padding(16.dp)) {
+                Row(modifier = Modifier.fillMaxWidth()) {
                     Icon(Icons.Default.AutoAwesome, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
                     Spacer(modifier = Modifier.width(12.dp))
                     Column {
@@ -497,26 +486,8 @@ fun CalculatorScreen(
 }
 
 @Composable
-fun GenderButton(text: String, isSelected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .height(40.dp)
-            .clip(RoundedCornerShape(8.dp))
-            .background(if (isSelected) MaterialTheme.colorScheme.surface else Color.Transparent)
-            .clickable { onClick() },
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = text,
-            color = if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-            fontSize = 14.sp
-        )
-    }
-}
-
-@Composable
 fun MeasurementCard(
+    hazeState: HazeState,
     label: String,
     value: Float,
     onValueChange: (Float) -> Unit,
@@ -544,12 +515,12 @@ fun MeasurementCard(
         }
     }
 
-    Card(
+    GlassCard(
+        hazeState = hazeState,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        contentPadding = PaddingValues(16.dp)
     ) {
-        Column(modifier = Modifier.padding(16.dp)) {
             Box(modifier = Modifier.fillMaxWidth()) {
                 Text(
                     text = label,
@@ -567,91 +538,80 @@ fun MeasurementCard(
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.Center
                 ) {
-                    BasicTextField(
-                        value = textValue,
-                        onValueChange = { newValue ->
-                            // Filter input to allow only numbers and relevant symbols
-                            val filtered = newValue.filter { it.isDigit() || it == '.' || it == ',' || it == '\'' || it == '\"' || it == ' ' }
-                            textValue = filtered
-                            
-                            if (currentUnit == "ft/in") {
-                                // Allow dot, quote or space as separators for feet and inches
-                                val regex = Regex("""(\d+)[.'"\s]*(\d+(?:[.,]\d+)?)?""")
-                                val match = regex.find(filtered)
-                                if (match != null) {
-                                    val val1 = match.groupValues[1].toFloatOrNull() ?: 0f
-                                    val val2 = match.groupValues[2].replace(',', '.').toFloatOrNull() ?: 0f
-                                    if (filtered.contains("'") || filtered.contains("\"") || filtered.contains(".") || filtered.contains(" ")) {
-                                        onValueChange(val1 * 12 + val2)
-                                    } else if (val1 > 10) {
-                                        onValueChange(val1) // Assume total inches if it's a large number
-                                    } else {
-                                        onValueChange(val1 * 12 + val2)
+                    Row(
+                        modifier = Modifier
+                            .liquidGlass(hazeState, RoundedCornerShape(12.dp), GlassLevel.UltraThin)
+                            .padding(horizontal = 12.dp, vertical = 4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        BasicTextField(
+                            value = textValue,
+                            onValueChange = { newValue ->
+                                // Filter input to allow only numbers and relevant symbols
+                                val filtered = newValue.filter { it.isDigit() || it == '.' || it == ',' || it == '\'' || it == '\"' || it == ' ' }
+                                textValue = filtered
+
+                                if (currentUnit == "ft/in") {
+                                    // Allow dot, quote or space as separators for feet and inches
+                                    val regex = Regex("""(\d+)[.'"\s]*(\d+(?:[.,]\d+)?)?""")
+                                    val match = regex.find(filtered)
+                                    if (match != null) {
+                                        val val1 = match.groupValues[1].toFloatOrNull() ?: 0f
+                                        val val2 = match.groupValues[2].replace(',', '.').toFloatOrNull() ?: 0f
+                                        if (filtered.contains("'") || filtered.contains("\"") || filtered.contains(".") || filtered.contains(" ")) {
+                                            onValueChange(val1 * 12 + val2)
+                                        } else if (val1 > 10) {
+                                            onValueChange(val1) // Assume total inches if it's a large number
+                                        } else {
+                                            onValueChange(val1 * 12 + val2)
+                                        }
+                                    }
+                                } else {
+                                    filtered.replace(',', '.').toFloatOrNull()?.let {
+                                        onValueChange(it)
                                     }
                                 }
-                            } else {
-                                filtered.replace(',', '.').toFloatOrNull()?.let {
-                                    onValueChange(it)
-                                }
-                            }
-                        },
-                        textStyle = TextStyle(
-                            fontWeight = FontWeight.Bold,
-                            fontSize = 24.sp,
-                            color = MaterialTheme.colorScheme.primary,
-                            textAlign = TextAlign.Center
-                        ),
-                        modifier = Modifier
-                            .widthIn(min = 90.dp)
-                            .width(IntrinsicSize.Min)
-                            .onFocusChanged { isFocused = it.isFocused },
-                        keyboardOptions = KeyboardOptions(
-                            keyboardType = KeyboardType.Decimal
-                        ),
-                        singleLine = true,
-                        cursorBrush = SolidColor(MaterialTheme.colorScheme.primary)
-                    )
-
-                    if (currentUnit != "ft/in") {
-                        Text(
-                            text = " $currentUnit",
-                            fontSize = 14.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontWeight = FontWeight.Bold,
-                            modifier = Modifier.padding(top = 4.dp)
-                        )
-                    }
-                }
-
-                Row(
-                    modifier = Modifier
-                        .align(Alignment.CenterEnd)
-                        .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(8.dp))
-                        .padding(2.dp)
-                ) {
-                    unitOptions.forEach { unit ->
-                        Box(
+                            },
+                            textStyle = TextStyle(
+                                fontWeight = FontWeight.Bold,
+                                fontSize = 24.sp,
+                                color = MaterialTheme.colorScheme.primary,
+                                textAlign = TextAlign.Center
+                            ),
                             modifier = Modifier
-                                .clip(RoundedCornerShape(6.dp))
-                                .background(if (currentUnit == unit) MaterialTheme.colorScheme.surface else Color.Transparent)
-                                .clickable { 
-                                    onUnitChange(unit)
-                                }
-                                .padding(horizontal = 10.dp, vertical = 4.dp)
-                        ) {
+                                .widthIn(min = 90.dp)
+                                .width(IntrinsicSize.Min)
+                                .onFocusChanged { isFocused = it.isFocused },
+                            keyboardOptions = KeyboardOptions(
+                                keyboardType = KeyboardType.Decimal
+                            ),
+                            singleLine = true,
+                            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary)
+                        )
+
+                        if (currentUnit != "ft/in") {
                             Text(
-                                text = unit,
-                                fontSize = 11.sp,
-                                fontWeight = if (currentUnit == unit) FontWeight.Bold else FontWeight.Normal,
-                                color = if (currentUnit == unit) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+                                text = " $currentUnit",
+                                fontSize = 14.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontWeight = FontWeight.Bold,
+                                modifier = Modifier.padding(top = 4.dp)
                             )
                         }
                     }
                 }
+
+                GlassSegmentedControl(
+                    options = unitOptions,
+                    selectedIndex = unitOptions.indexOf(currentUnit).coerceAtLeast(0),
+                    onSelect = { index -> onUnitChange(unitOptions[index]) },
+                    modifier = Modifier
+                        .align(Alignment.CenterEnd)
+                        .width((unitOptions.size * 48).dp)
+                )
             }
             Spacer(modifier = Modifier.height(16.dp))
             content()
-        }
     }
 }
 

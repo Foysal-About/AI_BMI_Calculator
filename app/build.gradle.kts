@@ -55,6 +55,10 @@ dependencies {
     // DataStore
     implementation(libs.datastore.preferences)
 
+    // Haze (Liquid Glass blur)
+    implementation(libs.haze)
+    implementation(libs.haze.materials)
+
     testImplementation(libs.junit)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)

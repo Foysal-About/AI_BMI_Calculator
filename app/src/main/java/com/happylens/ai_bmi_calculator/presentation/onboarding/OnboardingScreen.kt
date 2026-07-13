@@ -2,7 +2,6 @@ package com.happylens.ai_bmi_calculator.presentation.onboarding
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
@@ -35,6 +34,12 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.happylens.ai_bmi_calculator.domain.model.Gender
+import com.happylens.ai_bmi_calculator.ui.glass.GlassButton
+import com.happylens.ai_bmi_calculator.ui.glass.GlassCard
+import com.happylens.ai_bmi_calculator.ui.glass.GlassSegmentedControl
+import com.happylens.ai_bmi_calculator.ui.glass.rememberGlassState
+import dev.chrisbanes.haze.HazeState
+import dev.chrisbanes.haze.hazeSource
 import kotlinx.coroutines.launch
 
 @Composable
@@ -45,6 +50,7 @@ fun OnboardingScreen(
     val uiState by viewModel.uiState.collectAsState()
     val pagerState = rememberPagerState(pageCount = { 3 })
     val scope = rememberCoroutineScope()
+    val hazeState = rememberGlassState()
 
     // AI-vibe animated background
     val infiniteTransition = rememberInfiniteTransition(label = "onboarding_bg")
@@ -74,10 +80,10 @@ fun OnboardingScreen(
                 drawRect(
                     brush = Brush.linearGradient(
                         colors = listOf(
-                            Color(0xFF4F46E5), // Indigo
-                            Color(0xFF7C3AED), // Violet
-                            Color(0xFF3B82F6), // Blue
-                            Color(0xFF4F46E5), // Loop back
+                            Color(0xFF1E40AF), // Darker Blue
+                            Color(0xFF2563EB), // Blue
+                            Color(0xFF3B82F6), // Bright Blue
+                            Color(0xFF1E40AF), // Loop back
                         ),
                         start = start,
                         end = end
@@ -86,6 +92,7 @@ fun OnboardingScreen(
                 drawContent()
             }
             .sparkle(particleCount = 40)
+            .hazeSource(state = hazeState)
     ) {
         Column(
             modifier = Modifier
@@ -102,8 +109,9 @@ fun OnboardingScreen(
             ) { page ->
                 when (page) {
                     0 -> WelcomePage()
-                    1 -> FeaturesPage()
+                    1 -> FeaturesPage(hazeState = hazeState)
                     2 -> ProfilePage(
+                        hazeState = hazeState,
                         name = uiState.name,
                         age = uiState.age,
                         gender = uiState.gender,
@@ -122,7 +130,7 @@ fun OnboardingScreen(
                 horizontalArrangement = Arrangement.Center
             ) {
                 repeat(3) { iteration ->
-                    val color = if (pagerState.currentPage == iteration) Color.White else Color.White.copy(alpha = 0.3f)
+                    val color = if (pagerState.currentPage == iteration) Color.White else Color.White.copy(alpha = 0.5f)
                     Box(
                         modifier = Modifier
                             .padding(4.dp)
@@ -135,7 +143,7 @@ fun OnboardingScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            Button(
+            GlassButton(
                 onClick = {
                     if (pagerState.currentPage < 2) {
                         scope.launch {
@@ -148,17 +156,13 @@ fun OnboardingScreen(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp),
-                shape = RoundedCornerShape(16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.White,
-                    contentColor = Color(0xFF0000FF)
-                )
+                    .height(56.dp)
             ) {
                 Text(
                     text = if (pagerState.currentPage == 2) "Get Started" else "Continue",
                     fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
                 )
             }
 
@@ -169,7 +173,7 @@ fun OnboardingScreen(
                 },
                 modifier = Modifier.padding(top = 8.dp)
             ) {
-                Text(text = "Skip", color = Color.White.copy(alpha = 0.7f))
+                Text(text = "Skip", color = Color.White.copy(alpha = 0.9f))
             }
         }
     }
@@ -195,7 +199,7 @@ fun WelcomePage() {
                 imageVector = Icons.Default.AutoAwesome,
                 contentDescription = null,
                 modifier = Modifier.size(60.dp),
-                tint = Color(0xFF4F46E5)
+                tint = Color(0xFF2563EB)
             )
             // Smaller stars like in the screenshot
             Icon(
@@ -205,7 +209,7 @@ fun WelcomePage() {
                     .size(24.dp)
                     .align(Alignment.BottomEnd)
                     .offset(x = (-8).dp, y = (-8).dp),
-                tint = Color(0xFF10B981)
+                tint = Color(0xFF2DD4BF)
             )
         }
 
@@ -232,7 +236,7 @@ fun WelcomePage() {
 }
 
 @Composable
-fun FeaturesPage() {
+fun FeaturesPage(hazeState: HazeState) {
     Column(
         modifier = Modifier.fillMaxSize(),
         horizontalAlignment = Alignment.Start,
@@ -247,8 +251,9 @@ fun FeaturesPage() {
         )
 
         FeatureItem(
+            hazeState = hazeState,
             icon = Icons.Default.BarChart,
-            iconColor = MaterialTheme.colorScheme.primary,
+            iconColor = Color.White,
             title = "Progress tracking",
             description = "Every calculation saved automatically with interactive charts."
         )
@@ -256,8 +261,9 @@ fun FeaturesPage() {
         Spacer(modifier = Modifier.height(16.dp))
 
         FeatureItem(
+            hazeState = hazeState,
             icon = Icons.Default.AutoAwesome,
-            iconColor = Color(0xFF8B5CF6),
+            iconColor = Color.Cyan,
             title = "AI health insights",
             description = "Trend analysis, smart suggestions and a personal AI assistant.",
             showSparkle = true
@@ -266,8 +272,9 @@ fun FeaturesPage() {
         Spacer(modifier = Modifier.height(16.dp))
 
         FeatureItem(
+            hazeState = hazeState,
             icon = Icons.Default.Group,
-            iconColor = Color(0xFF10B981),
+            iconColor = Color.White,
             title = "Multiple profiles",
             description = "Family and friends get their own private history and goals."
         )
@@ -275,22 +282,29 @@ fun FeaturesPage() {
 }
 
 @Composable
-fun FeatureItem(icon: ImageVector, iconColor: Color, title: String, description: String, showSparkle: Boolean = false) {
-    Card(
+fun FeatureItem(
+    hazeState: HazeState,
+    icon: ImageVector,
+    iconColor: Color,
+    title: String,
+    description: String,
+    showSparkle: Boolean = false
+) {
+    GlassCard(
+        hazeState = hazeState,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        contentPadding = PaddingValues(16.dp),
+        tint = Color.White.copy(alpha = 0.05f)
     ) {
         Row(
-            modifier = Modifier.padding(16.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Box(
                 modifier = Modifier
                     .size(48.dp)
                     .clip(RoundedCornerShape(12.dp))
-                    .background(iconColor.copy(alpha = 0.1f))
+                    .background(iconColor.copy(alpha = 0.2f))
                     .then(if (showSparkle) Modifier.aiFlow(colors = listOf(iconColor, Color.White, iconColor), durationMillis = 2000).sparkle(color = iconColor.copy(alpha = 0.8f), particleCount = 12) else Modifier),
                 contentAlignment = Alignment.Center
             ) {
@@ -298,8 +312,8 @@ fun FeatureItem(icon: ImageVector, iconColor: Color, title: String, description:
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column {
-                Text(text = title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = MaterialTheme.colorScheme.onSurface)
-                Text(text = description, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Text(text = title, fontWeight = FontWeight.Bold, fontSize = 16.sp, color = Color.White)
+                Text(text = description, fontSize = 14.sp, color = Color.White.copy(alpha = 0.7f))
             }
         }
     }
@@ -307,6 +321,7 @@ fun FeatureItem(icon: ImageVector, iconColor: Color, title: String, description:
 
 @Composable
 fun ProfilePage(
+    hazeState: HazeState,
     name: String,
     age: Int,
     gender: Gender,
@@ -327,104 +342,94 @@ fun ProfilePage(
             modifier = Modifier.padding(bottom = 32.dp)
         )
 
-        Card(
+        GlassCard(
+            hazeState = hazeState,
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+            contentPadding = PaddingValues(24.dp),
+            tint = Color.White.copy(alpha = 0.05f)
         ) {
-            Column(modifier = Modifier.padding(24.dp)) {
-                Text(
-                    text = "YOUR NAME",
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+            Text(
+                text = "YOUR NAME",
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White.copy(alpha = 0.6f)
+            )
+            OutlinedTextField(
+                value = name,
+                onValueChange = onNameChange,
+                placeholder = { Text("e.g. John Doe", color = Color.White.copy(alpha = 0.4f)) },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    unfocusedBorderColor = Color.White.copy(alpha = 0.3f),
+                    focusedBorderColor = Color.White,
+                    unfocusedTextColor = Color.White,
+                    focusedTextColor = Color.White,
+                    cursorColor = Color.White
                 )
-                OutlinedTextField(
-                    value = name,
-                    onValueChange = onNameChange,
-                    placeholder = { Text("e.g. John Doe") },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = OutlinedTextFieldDefaults.colors(
-                        unfocusedBorderColor = MaterialTheme.colorScheme.outline,
-                        focusedBorderColor = MaterialTheme.colorScheme.primary,
-                        unfocusedTextColor = MaterialTheme.colorScheme.onSurface,
-                        focusedTextColor = MaterialTheme.colorScheme.onSurface
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            Row(modifier = Modifier.fillMaxWidth()) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "AGE",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White.copy(alpha = 0.6f)
                     )
-                )
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Row(modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "AGE",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                        )
-                        Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            modifier = Modifier.padding(top = 8.dp)
-                        ) {
-                            IconButton(
-                                onClick = { if (age > 1) onAgeChange(age - 1) },
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
-                            ) {
-                                Icon(Icons.Default.Remove, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            }
-                            Text(
-                                text = age.toString(),
-                                fontSize = 20.sp,
-                                fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 16.dp),
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            IconButton(
-                                onClick = { onAgeChange(age + 1) },
-                                modifier = Modifier
-                                    .size(36.dp)
-                                    .background(MaterialTheme.colorScheme.surfaceVariant, CircleShape)
-                            ) {
-                                Icon(Icons.Default.Add, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
-                            }
-                        }
-                    }
-
-                    Column(modifier = Modifier.weight(1.2f)) {
-                        Text(
-                            text = "GENDER",
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
-                        )
-                        Row(
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier.padding(top = 8.dp)
+                    ) {
+                        IconButton(
+                            onClick = { if (age > 1) onAgeChange(age - 1) },
                             modifier = Modifier
-                                .padding(top = 8.dp)
-                                .fillMaxWidth()
-                                .height(40.dp)
-                                .background(MaterialTheme.colorScheme.surfaceVariant, RoundedCornerShape(10.dp))
-                                .padding(4.dp)
+                                .size(36.dp)
+                                .background(Color.White.copy(alpha = 0.1f), CircleShape)
                         ) {
-                            GenderButton(
-                                text = "Male",
-                                isSelected = gender == Gender.MALE,
-                                onClick = { onGenderChange(Gender.MALE) },
-                                modifier = Modifier.weight(1f)
-                            )
-                            GenderButton(
-                                text = "Female",
-                                isSelected = gender == Gender.FEMALE,
-                                onClick = { onGenderChange(Gender.FEMALE) },
-                                modifier = Modifier.weight(1f)
-                            )
+                            Icon(Icons.Default.Remove, contentDescription = null, tint = Color.White)
+                        }
+                        Text(
+                            text = age.toString(),
+                            fontSize = 20.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color = Color.White
+                        )
+                        IconButton(
+                            onClick = { onAgeChange(age + 1) },
+                            modifier = Modifier
+                                .size(36.dp)
+                                .background(Color.White.copy(alpha = 0.1f), CircleShape)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null, tint = Color.White)
                         }
                     }
+                }
+
+                Column(modifier = Modifier.weight(1.2f)) {
+                    Text(
+                        text = "GENDER",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White.copy(alpha = 0.6f)
+                    )
+                    GlassSegmentedControl(
+                        options = listOf("Male", "Female"),
+                        selectedIndex = if (gender == Gender.MALE) 0 else 1,
+                        onSelect = { index ->
+                            onGenderChange(if (index == 0) Gender.MALE else Gender.FEMALE)
+                        },
+                        modifier = Modifier
+                            .padding(top = 8.dp)
+                            .fillMaxWidth()
+                            .height(40.dp)
+                    )
                 }
             }
         }
@@ -435,25 +440,6 @@ fun ProfilePage(
             color = Color.White.copy(alpha = 0.7f),
             modifier = Modifier.padding(top = 24.dp).padding(horizontal = 8.dp),
             lineHeight = 16.sp
-        )
-    }
-}
-
-@Composable
-fun GenderButton(text: String, isSelected: Boolean, onClick: () -> Unit, modifier: Modifier = Modifier) {
-    Box(
-        modifier = modifier
-            .fillMaxHeight()
-            .clip(RoundedCornerShape(8.dp))
-            .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.Transparent)
-            .clickable { onClick() },
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = text,
-            color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-            fontSize = 14.sp
         )
     }
 }
@@ -512,7 +498,7 @@ fun Modifier.sparkle(
  */
 @Composable
 fun Modifier.aiFlow(
-    colors: List<Color> = listOf(Color(0xFF4F46E5), Color(0xFF7C3AED), Color(0xFF3B82F6), Color(0xFF4F46E5)),
+    colors: List<Color> = listOf(Color(0xFF1E40AF), Color(0xFF2563EB), Color(0xFF3B82F6), Color(0xFF1E40AF)),
     durationMillis: Int = 4000
 ): Modifier = composed {
     val infiniteTransition = rememberInfiniteTransition(label = "aiFlow")

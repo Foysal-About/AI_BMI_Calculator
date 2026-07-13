@@ -7,8 +7,6 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
@@ -25,7 +23,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
@@ -37,6 +34,14 @@ import com.happylens.ai_bmi_calculator.domain.model.InsightKind
 import com.happylens.ai_bmi_calculator.presentation.components.CommonTopBar
 import com.happylens.ai_bmi_calculator.presentation.navigation.BottomNavigationBar
 import com.happylens.ai_bmi_calculator.presentation.navigation.Screen
+import com.happylens.ai_bmi_calculator.ui.glass.GlassCard
+import com.happylens.ai_bmi_calculator.ui.glass.GlassIconButton
+import com.happylens.ai_bmi_calculator.ui.glass.GlassLevel
+import com.happylens.ai_bmi_calculator.ui.glass.LiquidBackdrop
+import com.happylens.ai_bmi_calculator.ui.glass.glassRim
+import com.happylens.ai_bmi_calculator.ui.glass.liquidGlass
+import com.happylens.ai_bmi_calculator.ui.glass.rememberGlassState
+import dev.chrisbanes.haze.HazeState
 
 @Composable
 fun AIScreen(
@@ -56,20 +61,25 @@ fun AIScreen(
         if (itemCount > 0) listState.animateScrollToItem(itemCount - 1)
     }
 
+    val hazeState = rememberGlassState()
+
     fun submitMessage(text: String) {
         if (text.isBlank() || isTyping) return
         viewModel.sendMessage(text)
         messageText = ""
     }
 
+    LiquidBackdrop(hazeState = hazeState) {
     Scaffold(
         topBar = {
             CommonTopBar(
+                hazeState = hazeState,
                 title = "AI Insights",
                 rightContent = {
                     Surface(
                         color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(8.dp),
+                        modifier = Modifier.glassRim(RoundedCornerShape(8.dp))
                     ) {
                         Text(
                             text = "BETA",
@@ -85,6 +95,7 @@ fun AIScreen(
         bottomBar = {
             Column {
                 AssistantInputBar(
+                    hazeState = hazeState,
                     suggestionChips = suggestionChips,
                     messageText = messageText,
                     onMessageChange = { messageText = it },
@@ -94,100 +105,59 @@ fun AIScreen(
                 )
                 BottomNavigationBar(
                     currentRoute = Screen.AI.route,
-                    onNavigate = onNavigate
+                    onNavigate = onNavigate,
+                    hazeState = hazeState
                 )
             }
         },
-        containerColor = Color.Transparent,
-        modifier = Modifier.background(
-            brush = Brush.verticalGradient(
-                colors = listOf(
-                    Color(0xFF3B82F6).copy(alpha = if (isSystemInDarkTheme()) 0.12f else 0.07f),
-                    MaterialTheme.colorScheme.background,
-                    MaterialTheme.colorScheme.primary.copy(alpha = 0.03f)
-                )
-            )
-        )
+        containerColor = Color.Transparent
     ) { paddingValues ->
-        Box(
-            modifier = Modifier.fillMaxSize()
+        LazyColumn(
+            state = listState,
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(top = paddingValues.calculateTopPadding())
+                .padding(horizontal = 24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Subtle bluish decorative gradient in top right
-            Box(
-                modifier = Modifier
-                    .size(300.dp)
-                    .offset(x = 150.dp, y = (-100).dp)
-                    .background(
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                (if (isSystemInDarkTheme()) Color(0xFF3B82F6) else Color(0xFFDBEAFE)).copy(alpha = 0.2f),
-                                Color.Transparent
-                            )
-                        )
-                    )
-            )
+            item {
+                Spacer(modifier = Modifier.height(8.dp))
+            }
 
-            // Subtle green decorative gradient in bottom left
-            Box(
-                modifier = Modifier
-                    .size(280.dp)
-                    .align(Alignment.BottomStart)
-                    .offset(x = (-140).dp, y = 120.dp)
-                    .background(
-                        brush = Brush.radialGradient(
-                            colors = listOf(
-                                (if (isSystemInDarkTheme()) Color(0xFF10B981) else Color(0xFFD1FAE5)).copy(alpha = 0.12f),
-                                Color.Transparent
-                            )
-                        )
-                    )
-            )
+            items(insights, key = { it.kind.name + it.title }) { insight ->
+                InsightCard(
+                    hazeState = hazeState,
+                    category = insight.category,
+                    title = insight.title,
+                    description = insight.description,
+                    borderColor = colorForInsight(insight.kind)
+                )
+            }
 
-            LazyColumn(
-                state = listState,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(top = paddingValues.calculateTopPadding())
-                    .padding(horizontal = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                item {
-                    Spacer(modifier = Modifier.height(8.dp))
-                }
+            item {
+                Text(
+                    text = "Ask the assistant",
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
 
-                items(insights, key = { it.kind.name + it.title }) { insight ->
-                    InsightCard(
-                        category = insight.category,
-                        title = insight.title,
-                        description = insight.description,
-                        borderColor = colorForInsight(insight.kind)
-                    )
-                }
+            items(messages, key = { it.id }) { message ->
+                ChatBubble(message = message, hazeState = hazeState)
+            }
 
-                item {
-                    Text(
-                        text = "Ask the assistant",
-                        fontSize = 14.sp,
-                        fontWeight = FontWeight.Medium,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                }
-
-                items(messages, key = { it.id }) { message ->
-                    ChatBubble(message = message)
-                }
-
-                if (isTyping) {
-                    item(key = "typing-indicator") {
-                        TypingIndicatorBubble()
-                    }
-                }
-
-                item {
-                    Spacer(modifier = Modifier.height(paddingValues.calculateBottomPadding() + 16.dp))
+            if (isTyping) {
+                item(key = "typing-indicator") {
+                    TypingIndicatorBubble(hazeState = hazeState)
                 }
             }
+
+            item {
+                Spacer(modifier = Modifier.height(paddingValues.calculateBottomPadding() + 16.dp))
+            }
         }
+    }
     }
 }
 
@@ -200,22 +170,17 @@ private fun colorForInsight(kind: InsightKind): Color = when (kind) {
 
 @Composable
 fun InsightCard(
+    hazeState: HazeState,
     category: String,
     title: String,
     description: String,
     borderColor: Color
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .border(
-                width = 1.dp,
-                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f),
-                shape = RoundedCornerShape(24.dp)
-            ),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+    GlassCard(
+        hazeState = hazeState,
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        contentPadding = PaddingValues(0.dp)
     ) {
         Row(
             modifier = Modifier
@@ -261,40 +226,62 @@ fun InsightCard(
 }
 
 @Composable
-fun ChatBubble(message: ChatMessage) {
+fun ChatBubble(message: ChatMessage, hazeState: HazeState) {
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = if (message.isFromUser) Arrangement.End else Arrangement.Start
     ) {
-        Surface(
-            modifier = Modifier.widthIn(max = 280.dp),
-            color = if (message.isFromUser) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surface,
-            shape = RoundedCornerShape(
-                topStart = 20.dp,
-                topEnd = 20.dp,
-                bottomStart = if (message.isFromUser) 20.dp else 4.dp,
-                bottomEnd = if (message.isFromUser) 4.dp else 20.dp
-            ),
-            shadowElevation = 2.dp
-        ) {
-            Text(
-                text = message.text,
-                modifier = Modifier.padding(16.dp),
-                fontSize = 15.sp,
-                color = if (message.isFromUser) Color.White else MaterialTheme.colorScheme.onSurface,
-                lineHeight = 22.sp
-            )
+        val shape = RoundedCornerShape(
+            topStart = 20.dp,
+            topEnd = 20.dp,
+            bottomStart = if (message.isFromUser) 20.dp else 4.dp,
+            bottomEnd = if (message.isFromUser) 4.dp else 20.dp
+        )
+        if (message.isFromUser) {
+            // Solid brand-color fill for the user's own messages so they read as a
+            // distinct, opaque "sent" bubble against the assistant's frosted glass ones.
+            Surface(
+                modifier = Modifier.widthIn(max = 280.dp),
+                color = MaterialTheme.colorScheme.primary,
+                shape = shape,
+                shadowElevation = 2.dp
+            ) {
+                Text(
+                    text = message.text,
+                    modifier = Modifier.padding(16.dp),
+                    fontSize = 15.sp,
+                    color = Color.White,
+                    lineHeight = 22.sp
+                )
+            }
+        } else {
+            Box(
+                modifier = Modifier
+                    .widthIn(max = 280.dp)
+                    .liquidGlass(hazeState = hazeState, shape = shape, level = GlassLevel.Regular)
+            ) {
+                Text(
+                    text = message.text,
+                    modifier = Modifier.padding(16.dp),
+                    fontSize = 15.sp,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    lineHeight = 22.sp
+                )
+            }
         }
     }
 }
 
 @Composable
-fun TypingIndicatorBubble() {
+fun TypingIndicatorBubble(hazeState: HazeState) {
     Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Start) {
-        Surface(
-            color = MaterialTheme.colorScheme.surface,
-            shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomStart = 4.dp, bottomEnd = 20.dp),
-            shadowElevation = 2.dp
+        Box(
+            modifier = Modifier
+                .liquidGlass(
+                    hazeState = hazeState,
+                    shape = RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp, bottomStart = 4.dp, bottomEnd = 20.dp),
+                    level = GlassLevel.Regular
+                )
         ) {
             Row(
                 modifier = Modifier.padding(horizontal = 18.dp, vertical = 16.dp),
@@ -326,6 +313,7 @@ fun TypingIndicatorBubble() {
 
 @Composable
 fun AssistantInputBar(
+    hazeState: HazeState,
     suggestionChips: List<String>,
     messageText: String,
     onMessageChange: (String) -> Unit,
@@ -336,7 +324,11 @@ fun AssistantInputBar(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f))
+            .liquidGlass(
+                hazeState = hazeState,
+                shape = RoundedCornerShape(topStart = 28.dp, topEnd = 28.dp),
+                level = GlassLevel.Regular
+            )
     ) {
         if (suggestionChips.isNotEmpty()) {
             LazyRow(
@@ -361,12 +353,12 @@ fun AssistantInputBar(
                 modifier = Modifier
                     .weight(1f)
                     .height(56.dp)
-                    .clip(RoundedCornerShape(28.dp)),
+                    .liquidGlass(hazeState = hazeState, shape = RoundedCornerShape(28.dp), level = GlassLevel.Thin),
                 placeholder = { Text("Ask about your health...", color = MaterialTheme.colorScheme.onSurfaceVariant) },
                 colors = TextFieldDefaults.colors(
-                    focusedContainerColor = MaterialTheme.colorScheme.surface,
-                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
-                    disabledContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedContainerColor = Color.Transparent,
+                    unfocusedContainerColor = Color.Transparent,
+                    disabledContainerColor = Color.Transparent,
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent,
                 ),
@@ -375,21 +367,18 @@ fun AssistantInputBar(
                 keyboardActions = KeyboardActions(onSend = { onSend() })
             )
             Spacer(modifier = Modifier.width(8.dp))
-            IconButton(
+            GlassIconButton(
                 onClick = onSend,
-                enabled = enabled && messageText.isNotBlank(),
-                modifier = Modifier
-                    .size(48.dp)
-                    .background(
-                        if (enabled && messageText.isNotBlank()) MaterialTheme.colorScheme.primary
-                        else MaterialTheme.colorScheme.primary.copy(alpha = 0.4f),
-                        CircleShape
-                    )
+                hazeState = hazeState,
+                size = 48.dp,
+                level = GlassLevel.Regular,
+                enabled = enabled && messageText.isNotBlank()
             ) {
                 Icon(
                     imageVector = Icons.Default.ArrowUpward,
                     contentDescription = "Send",
-                    tint = Color.White
+                    tint = if (enabled && messageText.isNotBlank()) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f)
                 )
             }
         }
@@ -400,10 +389,9 @@ fun AssistantInputBar(
 fun SuggestionChip(text: String, onClick: () -> Unit) {
     Surface(
         onClick = onClick,
-        color = MaterialTheme.colorScheme.surface,
+        color = MaterialTheme.colorScheme.surface.copy(alpha = 0.35f),
         shape = RoundedCornerShape(20.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
-        shadowElevation = 1.dp
+        modifier = Modifier.glassRim(RoundedCornerShape(20.dp))
     ) {
         Text(
             text = text,

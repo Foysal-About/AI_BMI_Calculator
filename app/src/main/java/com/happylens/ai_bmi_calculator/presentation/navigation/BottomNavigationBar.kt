@@ -1,8 +1,7 @@
 package com.happylens.ai_bmi_calculator.presentation.navigation
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.*
@@ -12,24 +11,28 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.happylens.ai_bmi_calculator.ui.glass.GlassLevel
+import com.happylens.ai_bmi_calculator.ui.glass.liquidGlass
+import dev.chrisbanes.haze.HazeState
 
 @Composable
 fun BottomNavigationBar(
     currentRoute: String?,
-    onNavigate: (String) -> Unit
+    onNavigate: (String) -> Unit,
+    hazeState: HazeState
 ) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.surface.copy(alpha = 0.6f))
-            .border(
-                width = 0.5.dp,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f),
-                shape = androidx.compose.ui.graphics.RectangleShape
+            .navigationBarsPadding()
+            .padding(horizontal = 20.dp, vertical = 12.dp)
+            .liquidGlass(
+                hazeState = hazeState,
+                shape = RoundedCornerShape(32.dp),
+                level = GlassLevel.Thin
             )
     ) {
         NavigationBar(
-            modifier = Modifier.navigationBarsPadding(),
             containerColor = Color.Transparent,
             tonalElevation = 0.dp
         ) {
